@@ -30,7 +30,8 @@ st.set_page_config(
 # CONFIGURATION
 # =========================================================
 
-MODEL_PATH = "trained_plant_disease_model.keras"
+MODEL_PATH = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")
+MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
 BACKGROUND_PATH = "home_page.jpeg"
 
 DATA_DIR = "data"
