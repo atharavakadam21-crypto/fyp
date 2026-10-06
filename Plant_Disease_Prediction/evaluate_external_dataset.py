@@ -136,6 +136,7 @@ def main():
                         "file": str(image_path),
                         "external_class": folder.name,
                         "mapped_true_class": model_class,
+                        "true_index": true_index,
                     }
                 )
             except Exception as error:
