@@ -6,29 +6,21 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from PIL import Image, ImageOps
-from sklearn.metrics import (
-    accuracy_score,
-    classification_report,
-    confusion_matrix,
-    precision_recall_fscore_support,
-)
+from sklearn.metrics import confusion_matrix
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-
 MODEL_PATH = Path(
     os.getenv(
         "PLANTVISION_MODEL_PATH",
         str(PROJECT_ROOT / "trained_plant_disease_model_improved.keras"),
     )
 )
-
 EXTERNAL_PATH = Path(
     os.getenv(
         "EXTERNAL_DATASET",
         r"D:\FYP\External_Dataset\Test_OOD",
     )
 )
-
 IMAGE_SIZE = (128, 128)
 BATCH_SIZE = 32
 
@@ -100,6 +92,7 @@ def main():
     if not EXTERNAL_PATH.is_dir():
         raise FileNotFoundError(f"External dataset not found: {EXTERNAL_PATH}")
 
+    print("\nLoading model...")
     model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 
     if model.output_shape[-1] != len(CLASS_NAMES):
@@ -108,18 +101,15 @@ def main():
         )
 
     images = []
-    y_true = []
     rows = []
-    skipped = Counter()
 
     for folder in sorted(EXTERNAL_PATH.iterdir()):
         if not folder.is_dir():
             continue
 
         model_class = EXTERNAL_TO_MODEL.get(folder.name, folder.name)
-
         if model_class not in CLASS_TO_INDEX:
-            skipped[folder.name] += 1
+            print(f"Skipping unmapped class: {folder.name}")
             continue
 
         true_index = CLASS_TO_INDEX[model_class]
@@ -130,7 +120,6 @@ def main():
 
             try:
                 images.append(load_image(image_path))
-                y_true.append(true_index)
                 rows.append(
                     {
                         "file": str(image_path),
@@ -140,85 +129,100 @@ def main():
                     }
                 )
             except Exception as error:
-                skipped[f"{folder.name}/{image_path.name}: {error}"] += 1
+                print(f"Skipping {image_path}: {error}")
 
     if not images:
-        raise RuntimeError("No images were evaluated.")
+        raise RuntimeError("No images were loaded.")
 
     x = np.stack(images)
-    probabilities = model.predict(
-        x,
-        batch_size=BATCH_SIZE,
-        verbose=1,
-    )
+    print(f"Images loaded: {len(x):,}")
+    print(f"Input shape: {x.shape}")
 
-    y_pred = np.argmax(probabilities, axis=1)
+    print("\nRunning predictions...")
+    probabilities = model.predict(x, batch_size=BATCH_SIZE, verbose=1)
+    predicted = np.argmax(probabilities, axis=1)
     confidence = np.max(probabilities, axis=1)
 
-    accuracy = accuracy_score(y_true, y_pred)
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_true,
-        y_pred,
-        average="macro",
-        zero_division=0,
-    )
+    true = np.array([row["true_index"] for row in rows])
+    correct = predicted == true
 
-    print("\nEXTERNAL DATASET EVALUATION")
-    print("=" * 60)
-    print(f"Model:            {MODEL_PATH}")
-    print(f"Images evaluated: {len(y_true):,}")
-    print(f"Accuracy:         {accuracy:.4%}")
-    print(f"Macro precision:  {precision:.4%}")
-    print(f"Macro recall:     {recall:.4%}")
-    print(f"Macro F1:         {f1:.4%}")
-    print(f"Mean confidence:  {confidence.mean():.4%}")
-
-    labels = sorted(set(y_true) | set(y_pred))
-    target_names = [CLASS_NAMES[index] for index in labels]
-
-    print("\nCLASSIFICATION REPORT")
-    print(
-        classification_report(
-            y_true,
-            y_pred,
-            labels=labels,
-            target_names=target_names,
-            zero_division=0,
-        )
-    )
-
-    report_dir = PROJECT_ROOT / "external_evaluation_results"
-    report_dir.mkdir(parents=True, exist_ok=True)
-
-    for row, pred, conf in zip(rows, y_pred, confidence):
+    for row, pred, conf, is_correct in zip(rows, predicted, confidence, correct):
         row["predicted_class"] = CLASS_NAMES[int(pred)]
         row["confidence"] = float(conf)
-        row["correct"] = bool(pred == row.get("true_index", -1))
+        row["correct"] = bool(is_correct)
 
-    pd.DataFrame(rows).to_csv(
-        report_dir / "predictions.csv",
+    diagnostics_dir = PROJECT_ROOT / "results" / "diagnostics"
+    diagnostics_dir.mkdir(parents=True, exist_ok=True)
+
+    counts = Counter(predicted.tolist())
+
+    print("\n" + "=" * 90)
+    print("PREDICTION DISTRIBUTION")
+    print("=" * 90)
+
+    for index, count in counts.most_common():
+        print(
+            f"{index:02d} | {CLASS_NAMES[index]:60s} | "
+            f"{count:4d} images ({count / len(predicted) * 100:6.2f}%)"
+        )
+
+    print("\n" + "=" * 90)
+    print("CONFIDENCE VS CORRECTNESS")
+    print("=" * 90)
+
+    accuracy = float(np.mean(correct))
+    print(f"Valid samples       : {len(correct):,}")
+    print(f"Correct predictions : {int(correct.sum()):,}")
+    print(f"Wrong predictions   : {int((~correct).sum()):,}")
+    print(f"Accuracy            : {accuracy * 100:.4f}%")
+
+    print(
+        f"\nMean confidence when CORRECT: "
+        f"{confidence[correct].mean() * 100:.2f}%"
+        if correct.any()
+        else "\nMean confidence when CORRECT: N/A"
+    )
+    print(
+        f"Mean confidence when WRONG: "
+        f"{confidence[~correct].mean() * 100:.2f}%"
+        if (~correct).any()
+        else "Mean confidence when WRONG: N/A"
+    )
+
+    report = pd.DataFrame(rows)
+    report.to_csv(
+        diagnostics_dir / "external_diagnostic_predictions.csv",
         index=False,
     )
 
     matrix = confusion_matrix(
-        y_true,
-        y_pred,
-        labels=labels,
+        true,
+        predicted,
+        labels=list(range(len(CLASS_NAMES))),
     )
-
     pd.DataFrame(
         matrix,
-        index=target_names,
-        columns=target_names,
-    ).to_csv(report_dir / "confusion_matrix.csv")
+        index=CLASS_NAMES,
+        columns=CLASS_NAMES,
+    ).to_csv(
+        diagnostics_dir / "external_confusion_matrix_diagnostic.csv"
+    )
 
-    print(f"\nDetailed predictions: {report_dir / 'predictions.csv'}")
-    print(f"Confusion matrix:     {report_dir / 'confusion_matrix.csv'}")
+    summary = {
+        "model": str(MODEL_PATH),
+        "images": int(len(correct)),
+        "accuracy": accuracy,
+        "mean_confidence": float(confidence.mean()),
+        "median_confidence": float(np.median(confidence)),
+    }
 
-    if skipped:
-        print("\nSKIPPED ITEMS")
-        for item, count in skipped.items():
-            print(f"{count}x {item}")
+    pd.Series(summary).to_json(
+        diagnostics_dir / "external_prediction_distribution.json",
+        indent=2,
+    )
+
+    print("\nDiagnostics saved to:")
+    print(diagnostics_dir)
 
 
 if __name__ == "__main__":
