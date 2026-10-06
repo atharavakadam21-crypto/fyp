@@ -424,7 +424,7 @@ def main():
 
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
-            ADAPTED_MODEL_PATH,
+            str(ADAPTED_MODEL_PATH),
             monitor="val_accuracy",
             mode="max",
             save_best_only=True,
