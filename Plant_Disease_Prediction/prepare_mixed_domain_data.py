@@ -184,6 +184,11 @@ def main() -> None:
 
     # dHash values are sorted for a cheap local neighborhood search.
     original_dhash.sort()
+    # Index hashes by their top 8 bits so near-duplicate checks do not scan
+    # all ~70k original images for every PlantDoc image.
+    dhash_buckets: dict[int, list[int]] = defaultdict(list)
+    for value in original_dhash:
+        dhash_buckets[value >> 56].append(value)
     print(f"Original training images indexed: {len(original_rows):,}")
 
     candidates: dict[str, list[dict]] = defaultdict(list)
@@ -259,11 +264,17 @@ def main() -> None:
                 perceptual = dhash_bytes(data)
                 if perceptual:
                     value = int(perceptual, 16)
-                    # A Hamming distance <= 4 is a conservative near-duplicate
-                    # screen. It can remove visually similar images, so it is
-                    # recorded explicitly in the audit.
-                    if any(hamming_hex(perceptual, f"{v:016x}") <= 4
-                           for v in original_dhash_set):
+                    # Search only buckets whose top 8 bits are within Hamming
+                    # distance 2, then verify full 64-bit distance <= 4.
+                    # This keeps the perceptual check practical for 70k images.
+                    prefix = value >> 56
+                    nearby = (
+                        candidate
+                        for bucket, values in dhash_buckets.items()
+                        if (prefix ^ bucket).bit_count() <= 2
+                        for candidate in values
+                    )
+                    if any((value ^ candidate).bit_count() <= 4 for candidate in nearby):
                         perceptual_duplicates += 1
                         audit_rows.append({
                             "source_label": source_label,
