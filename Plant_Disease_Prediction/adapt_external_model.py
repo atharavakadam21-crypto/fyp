@@ -306,9 +306,16 @@ def make_class_weights(train_df: pd.DataFrame) -> dict[int, float]:
     total = len(train_df)
     class_count = len(counts)
 
-    return {
+    weights = {
         label: total / (class_count * count)
         for label, count in sorted(counts.items())
+    }
+
+    # Keras requires class_weight keys for every output class (0..37).
+    # External classes absent from this dataset receive a neutral weight.
+    return {
+        label: weights.get(label, 1.0)
+        for label in range(len(CLASS_NAMES))
     }
 
 
@@ -457,7 +464,12 @@ def main():
     )
 
     with HISTORY_PATH.open("w", encoding="utf-8") as handle:
-        json.dump(history.history, handle, indent=2)
+        # Convert NumPy/TensorFlow scalar values to native Python floats.
+        serializable_history = {
+            key: [float(value) for value in values]
+            for key, values in history.history.items()
+        }
+        json.dump(serializable_history, handle, indent=2)
 
     if ADAPTED_MODEL_PATH.exists():
         model = tf.keras.models.load_model(
