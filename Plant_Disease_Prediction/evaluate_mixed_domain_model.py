@@ -26,13 +26,29 @@ def load_manifest(path: Path, class_to_id: dict[str, int]):
     with path.open("r", newline="", encoding="utf-8-sig") as handle:
         for row in csv.DictReader(handle):
             image_path = Path(row["path"])
-            label = row["label"]
-            if label not in class_to_id:
-                raise ValueError(f"Manifest label {label!r} is not in class_names.txt")
+            label = str(row["label"]).strip()
+            if label in class_to_id:
+                label_id = class_to_id[label]
+            else:
+                # External-domain split manifests store the canonical 38-class
+                # index as an integer. This is valid only when the manifest was
+                # created with the same alphabetical class order as class_names.txt.
+                try:
+                    label_id = int(label)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Manifest label {label!r} is neither a class name nor an integer index. "
+                        "Check the manifest and class_names.txt ordering."
+                    ) from exc
+                if not 0 <= label_id < len(class_to_id):
+                    raise ValueError(
+                        f"Manifest label index {label_id} is outside the valid range "
+                        f"0..{len(class_to_id) - 1}."
+                    )
             if not image_path.is_file():
                 raise FileNotFoundError(f"Image not found: {image_path}")
             paths.append(str(image_path.resolve()))
-            labels.append(class_to_id[label])
+            labels.append(label_id)
     if not paths:
         raise ValueError(f"No images found in manifest: {path}")
     return paths, np.asarray(labels, dtype=np.int64)
