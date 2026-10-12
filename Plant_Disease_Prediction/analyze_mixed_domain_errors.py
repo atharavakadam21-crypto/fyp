@@ -23,16 +23,30 @@ IMAGE_SIZE = (224, 224)
 
 def load_manifest(path: Path, class_to_id: dict[str, int]):
     paths, labels = [], []
+    class_count = len(class_to_id)
     with path.open("r", newline="", encoding="utf-8-sig") as handle:
         for row in csv.DictReader(handle):
             image_path = Path(row["path"])
-            label = row["label"]
-            if label not in class_to_id:
-                raise ValueError(f"Unknown label {label!r} in {path}")
+            label = str(row["label"]).strip()
+            if label in class_to_id:
+                label_id = class_to_id[label]
+            else:
+                # External-domain manifests store the model's numeric class
+                # index. Their label order is defined by adapt_external_model.py
+                # and must match class_names.txt.
+                try:
+                    label_id = int(label)
+                except ValueError as exc:
+                    raise ValueError(f"Unknown label {label!r} in {path}") from exc
+                if not 0 <= label_id < class_count:
+                    raise ValueError(
+                        f"Numeric label {label_id} outside valid range "
+                        f"0..{class_count - 1} in {path}"
+                    )
             if not image_path.is_file():
                 raise FileNotFoundError(f"Image not found: {image_path}")
             paths.append(str(image_path.resolve()))
-            labels.append(class_to_id[label])
+            labels.append(label_id)
     if not paths:
         raise ValueError(f"No images in manifest: {path}")
     return paths, np.asarray(labels, dtype=np.int64)
@@ -68,7 +82,7 @@ def main():
         if not path.is_file():
             raise FileNotFoundError(path)
 
-    class_names = args.class_names.read_text(encoding="utf-8").splitlines()
+    class_names = args.class_names.read_text(encoding="utf-8-sig").splitlines()
     if len(class_names) != 38 or len(set(class_names)) != 38:
         raise ValueError(f"Expected 38 unique class names; got {len(class_names)}")
     class_to_id = {name: i for i, name in enumerate(class_names)}
