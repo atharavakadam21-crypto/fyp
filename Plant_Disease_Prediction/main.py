@@ -11,7 +11,7 @@ import streamlit as st
 import tensorflow as tf
 import matplotlib.cm as cm
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 # =========================================================
@@ -570,9 +570,16 @@ def validate_image(image):
 
 
 def preprocess_image(image):
+    """Match the original TensorFlow training pipeline: EXIF-corrected RGB,
+    128x128 bilinear resize, and raw float32 pixels in the 0-255 range.
+    """
 
+    image = ImageOps.exif_transpose(image)
     image = image.convert("RGB")
-    image = image.resize((128, 128))
+    image = image.resize(
+        (128, 128),
+        resample=Image.Resampling.BILINEAR
+    )
 
     array = np.asarray(image, dtype=np.float32)
     array = np.expand_dims(array, axis=0)
