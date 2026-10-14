@@ -82,7 +82,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 def load_image(path):
     with Image.open(path) as image:
         image = ImageOps.exif_transpose(image).convert("RGB")
-        image = image.resize(IMAGE_SIZE)
+        image = image.resize(IMAGE_SIZE, resample=Image.Resampling.BILINEAR)
         return np.asarray(image, dtype=np.float32)
 
 
