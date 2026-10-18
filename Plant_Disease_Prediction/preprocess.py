@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 import tensorflow as tf
-from PIL import Image, ImageOps
+from PIL import Image
 
 IMAGE_SIZE = (128, 128)
 COLOR_MODE = "RGB"
@@ -27,7 +27,9 @@ def preprocess_image(image, image_size=IMAGE_SIZE) -> np.ndarray:
         float32 array with shape (height, width, 3), raw pixel range [0, 255].
     """
     if isinstance(image, Image.Image):
-        image = ImageOps.exif_transpose(image).convert(COLOR_MODE)
+        # Keras directory loading converts to RGB and resizes; it does not
+        # apply EXIF orientation correction, so keep that behavior consistent.
+        image = image.convert(COLOR_MODE)
         array = np.asarray(image)
     else:
         # ImageDataGenerator may pass float32 augmented pixels. Preserve those
