@@ -91,9 +91,27 @@ def main() -> int:
         p for p in dataset_path.rglob("*")
         if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
     )
-    rows = []
     skipped = []
-    images, metadata = [], []
+    metadata = []
+    predicted_indices, confidences, top3_values = [], [], []
+    batch_images, batch_metadata = [], []
+
+    def predict_batch():
+        if not batch_images:
+            return
+        probabilities = model(np.stack(batch_images), training=False).numpy()
+        order = np.argsort(-probabilities, axis=1, kind="stable")
+        for prob, indices in zip(probabilities, order):
+            predicted_indices.append(int(indices[0]))
+            confidences.append(float(prob[indices[0]]))
+            top3_values.append([
+                {"index": int(i), "name": class_names[int(i)], "confidence": float(prob[i])}
+                for i in indices[:3]
+            ])
+        metadata.extend(batch_metadata)
+        batch_images.clear()
+        batch_metadata.clear()
+
     for path in files:
         relative = path.relative_to(dataset_path)
         external_label = relative.parts[0] if len(relative.parts) > 1 else ""
@@ -103,26 +121,16 @@ def main() -> int:
         try:
             with Image.open(path) as image:
                 tensor = preprocess_image(image)
-            images.append(tensor)
-            metadata.append((path, external_label, mapped_label))
+            batch_images.append(tensor)
+            batch_metadata.append((path, external_label, mapped_label))
+            if len(batch_images) >= args.batch_size:
+                predict_batch()
         except Exception as error:
             skipped.append({"filepath": str(path), "reason": str(error)})
 
-    if not images:
+    predict_batch()
+    if not metadata:
         raise RuntimeError("No readable images found.")
-
-    predicted_indices, confidences, top3_values = [], [], []
-    for start in range(0, len(images), args.batch_size):
-        batch = np.stack(images[start:start + args.batch_size])
-        probabilities = model(batch, training=False).numpy()
-        order = np.argsort(-probabilities, axis=1, kind="stable")
-        for prob, indices in zip(probabilities, order):
-            predicted_indices.append(int(indices[0]))
-            confidences.append(float(prob[indices[0]]))
-            top3_values.append([
-                {"index": int(i), "name": class_names[int(i)], "confidence": float(prob[i])}
-                for i in indices[:3]
-            ])
 
     total = len(files)
     evaluated = len(metadata)
