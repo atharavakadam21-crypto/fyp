@@ -2,6 +2,7 @@ import os
 import json
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from preprocess import preprocess_image
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 MODEL_PATH = "trained_plant_disease_model.keras"
@@ -37,6 +38,7 @@ print(f"Parameters: {model.count_params():,}")
 # The current application feeds raw float32 pixel values (0-255).
 # Do not add rescale=1./255 unless the model is retrained with it.
 train_datagen = ImageDataGenerator(
+    preprocessing_function=preprocess_image,
     rotation_range=15,
     width_shift_range=0.08,
     height_shift_range=0.08,
@@ -46,11 +48,12 @@ train_datagen = ImageDataGenerator(
     fill_mode="nearest",
 )
 
-valid_datagen = ImageDataGenerator()
+valid_datagen = ImageDataGenerator(preprocessing_function=preprocess_image)
 
 train_generator = train_datagen.flow_from_directory(
     TRAIN_DIR,
     target_size=IMAGE_SIZE,
+    interpolation="bilinear",
     batch_size=BATCH_SIZE,
     class_mode="categorical",
     shuffle=True,
