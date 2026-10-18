@@ -1,3 +1,9 @@
+"""DEPRECATED: Use evaluate.py for all reproducible evaluation.
+
+This legacy script is retained for historical comparison only. It has not been
+removed; its preprocessing/label-handling may differ from the canonical pipeline.
+"""
+
 import os
 from collections import Counter
 from pathlib import Path
