@@ -27,13 +27,21 @@ def test_st_image_calls_use_streamlit_122_compatible_width_argument():
         assert "use_column_width" in keyword_names
 
 
-def test_improved_checkpoint_is_the_default_and_models_are_not_modified():
-    # The app selects Model 3 by default; it never retrains or rewrites checkpoints.
+def test_production_checkpoint_is_the_default_and_models_are_not_modified():
+    # Restore the previously used checkpoint; app code never retrains or rewrites models.
     source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
-    assert 'os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model_improved.keras")' in source
-    assert 'os.getenv("PLANTVISION_MODEL_VERSION", "improved")' in source
+    assert 'os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")' in source
+    assert 'os.getenv("PLANTVISION_MODEL_VERSION", "production")' in source
     assert "load_model(MODEL_PATH" in source
     assert "model.fit(" not in source
+
+
+def test_gradcam_adds_batch_dimension_to_single_image():
+    source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
+    start = source.index("def generate_gradcam(")
+    end = source.index("\n\ndef ", start + 1)
+    gradcam_source = source[start:end]
+    assert "np.expand_dims(preprocess_image(image), axis=0)" in gradcam_source
 
 
 def test_runtime_pins_keep_streamlit_and_protobuf_compatible():
