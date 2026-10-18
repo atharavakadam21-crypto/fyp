@@ -32,7 +32,13 @@ st.set_page_config(
 # CONFIGURATION
 # =========================================================
 
-MODEL_PATH = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_configured_model_path = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")
+MODEL_PATH = (
+    _configured_model_path
+    if os.path.isabs(_configured_model_path)
+    else os.path.join(BASE_DIR, _configured_model_path)
+)
 MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
 BACKGROUND_PATH = "home_page.jpeg"
 
@@ -52,7 +58,7 @@ REAL_WORLD_FILE = os.path.join(
     "real_world_tests.csv"
 )
 
-MODEL_VERSION = "v1.0"
+MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
 
 DEFAULT_THRESHOLD = 0.60
 
@@ -476,10 +482,24 @@ CLASS_NAMES = [_class_mapping[str(index)] for index in range(len(_class_mapping)
 
 def load_model():
 
-    return tf.keras.models.load_model(
+    if not os.path.isfile(MODEL_PATH):
+        raise FileNotFoundError(
+            f"Configured model checkpoint does not exist: {MODEL_PATH}"
+        )
+
+    loaded_model = tf.keras.models.load_model(
         MODEL_PATH,
         compile=False
     )
+
+    output_shape = loaded_model.output_shape
+    if not isinstance(output_shape, tuple) or output_shape[-1] != len(CLASS_NAMES):
+        raise ValueError(
+            f"Model output has shape {output_shape}, but class_names.json contains "
+            f"{len(CLASS_NAMES)} classes. Check that the checkpoint and class mapping match."
+        )
+
+    return loaded_model
 
 
 model = None
@@ -491,8 +511,7 @@ try:
 except Exception as error:
 
     st.error(
-        "Model could not be loaded. Ensure trained_plant_disease_model.keras "
-        f"exists beside main.py. Details: {error}"
+        f"Model could not be loaded from {MODEL_PATH}. Details: {error}"
     )
 
 
