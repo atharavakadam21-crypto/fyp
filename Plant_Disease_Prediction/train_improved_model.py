@@ -21,6 +21,12 @@ BATCH_SIZE = 32
 EPOCHS = 5
 SEED = 42
 
+tf.keras.utils.set_random_seed(SEED)
+try:
+    tf.config.experimental.enable_op_determinism()
+except Exception:
+    pass
+
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Current model not found: {MODEL_PATH}")
 
