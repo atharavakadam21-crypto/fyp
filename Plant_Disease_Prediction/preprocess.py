@@ -30,6 +30,8 @@ def preprocess_image(image, image_size=IMAGE_SIZE) -> np.ndarray:
         image = ImageOps.exif_transpose(image).convert(COLOR_MODE)
         array = np.asarray(image)
     else:
+        # ImageDataGenerator may pass float32 augmented pixels. Preserve those
+        # values rather than quantizing them back to uint8.
         array = np.asarray(image)
         if array.ndim != 3:
             raise ValueError(f"Expected an HWC image, got shape {array.shape}")
@@ -39,11 +41,8 @@ def preprocess_image(image, image_size=IMAGE_SIZE) -> np.ndarray:
             array = np.repeat(array, 3, axis=-1)
         elif array.shape[-1] != 3:
             raise ValueError(f"Expected 1, 3, or 4 channels, got {array.shape[-1]}")
-        if array.dtype != np.uint8:
-            array = np.clip(array, 0, 255).astype(np.uint8)
-        image = Image.fromarray(array, mode=COLOR_MODE)
 
-    tensor = tf.convert_to_tensor(np.asarray(image), dtype=tf.float32)
+    tensor = tf.convert_to_tensor(array, dtype=tf.float32)
     tensor = tf.image.resize(
         tensor,
         size=tuple(image_size),
