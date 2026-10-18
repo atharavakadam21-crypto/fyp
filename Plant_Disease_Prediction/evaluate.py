@@ -32,9 +32,22 @@ def read_mapping(path: Path) -> dict:
     else:
         try:
             import yaml
-        except ImportError as error:
-            raise RuntimeError("Reading label_mapping.yaml requires PyYAML (pip install pyyaml)") from error
-        data = yaml.safe_load(text)
+            data = yaml.safe_load(text)
+        except ImportError:
+            # The committed mapping uses quoted scalar keys/values only; this
+            # tiny fallback keeps evaluation usable without an extra dependency.
+            data = {}
+            for line_number, line in enumerate(text.splitlines(), 1):
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if ":" not in stripped:
+                    raise ValueError(f"Invalid YAML mapping line {line_number}: {line}")
+                key_text, value_text = stripped.split(":", 1)
+                key = json.loads(key_text.strip())
+                value_text = value_text.strip()
+                value = None if value_text == "null" else json.loads(value_text)
+                data[key] = value
     if not isinstance(data, dict):
         raise ValueError(f"Mapping file must contain a label-to-class mapping: {path}")
     return data
