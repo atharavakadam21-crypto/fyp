@@ -60,6 +60,12 @@ def main() -> int:
     mapping_path, output_dir = Path(args.mapping), Path(args.output)
     class_names = read_class_names(Path(args.class_names))
     mapping = read_mapping(mapping_path)
+    invalid_targets = {
+        str(label): target for label, target in mapping.items()
+        if target is not None and target not in class_names
+    }
+    if invalid_targets:
+        raise ValueError(f"Mapping targets absent from class_names.json: {invalid_targets}")
     if not model_path.is_file():
         raise FileNotFoundError(f"Model not found: {model_path}")
     if not dataset_path.is_dir():
