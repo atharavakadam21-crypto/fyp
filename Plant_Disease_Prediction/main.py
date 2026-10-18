@@ -942,7 +942,7 @@ def disease_recognition():
         st.image(
             image,
             caption="Uploaded Leaf",
-            use_container_width=True
+            use_column_width=True
         )
 
     with info_column:
@@ -1084,7 +1084,7 @@ def disease_recognition():
         st.image(
             gradcam_image,
             caption="Grad-CAM — Regions influencing the prediction",
-            use_container_width=True
+            use_column_width=True
         )
 
     except Exception as error:
@@ -1236,7 +1236,7 @@ def real_world_testing():
         st.image(
             image,
             caption="Real-World Test Image",
-            use_container_width=True
+            use_column_width=True
         )
 
     with result_col:
@@ -1324,7 +1324,7 @@ def real_world_testing():
         st.image(
             gradcam_image,
             caption="Grad-CAM — Real-World Test",
-            use_container_width=True
+            use_column_width=True
         )
 
     except Exception as error:
