@@ -43,3 +43,11 @@ def test_runtime_pins_keep_streamlit_and_protobuf_compatible():
     assert pins.get("streamlit") == "1.22.0"
     assert pins.get("protobuf") == "3.20.3"
     assert pins.get("tensorflow") == "2.15.0"
+
+
+
+def test_model_path_is_resolved_relative_to_main_file_not_terminal_directory():
+    source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
+    assert 'BASE_DIR = os.path.dirname(os.path.abspath(__file__))' in source
+    assert 'os.path.join(BASE_DIR, _configured_model_path)' in source
+    assert 'loaded_model.output_shape' in source
