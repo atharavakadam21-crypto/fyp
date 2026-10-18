@@ -12,3 +12,7 @@
 ## T4 — Complete the exact 30-label external mapping
 - **Blocker:** The local `Test_OOD` directory is not visible in the remote GitHub editing environment, so its exact 30 folder names cannot be enumerated. Guessing the missing labels would risk silently conflating disease definitions.
 - **Workaround:** The YAML contains canonical identity mappings and four aliases already evidenced in the legacy evaluator; the report flags incomplete inventory. On the machine holding the dataset, list its subfolders and reconcile every one to a valid model class or explicit `null` before presenting mapped-only accuracy.
+
+## T5 — Generate calibration plots and ECE metrics
+- **Blocker:** The validation images and Keras checkpoint are local-only and cannot be executed in this remote GitHub editor. Numeric ECE and PNG artifacts therefore cannot be truthfully generated here.
+- **Workaround:** Run `python calibration.py` with the original validation directory. The script fits temperature on one deterministic half and reports on the other; it saves the required PNG/CSV/JSON artifacts without touching the model file.
