@@ -8,3 +8,7 @@
 ## Validation execution
 - **Blocker:** Unit tests, dataset evaluation, calibration, and candidate-vs-production comparisons require the local dataset and model binaries; these are not stored in the source checkout available to the remote editor.
 - **Workaround:** Run the committed scripts locally and retain their generated reports. Reports explicitly mark measurements as pending rather than fabricating results.
+
+## T4 — Complete the exact 30-label external mapping
+- **Blocker:** The local `Test_OOD` directory is not visible in the remote GitHub editing environment, so its exact 30 folder names cannot be enumerated. Guessing the missing labels would risk silently conflating disease definitions.
+- **Workaround:** The YAML contains canonical identity mappings and four aliases already evidenced in the legacy evaluator; the report flags incomplete inventory. On the machine holding the dataset, list its subfolders and reconcile every one to a valid model class or explicit `null` before presenting mapped-only accuracy.
