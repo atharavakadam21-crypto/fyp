@@ -13,6 +13,8 @@ import matplotlib.cm as cm
 
 from PIL import Image, ImageOps
 
+from preprocess import preprocess_image
+
 
 # =========================================================
 # PAGE CONFIGURATION
@@ -569,30 +571,12 @@ def validate_image(image):
     return True, "Image validated successfully."
 
 
-def preprocess_image(image):
-    """Match the original TensorFlow training pipeline: EXIF-corrected RGB,
-    128x128 bilinear resize, and raw float32 pixels in the 0-255 range.
-    """
-
-    image = ImageOps.exif_transpose(image)
-    image = image.convert("RGB")
-    image = image.resize(
-        (128, 128),
-        resample=Image.Resampling.BILINEAR
-    )
-
-    array = np.asarray(image, dtype=np.float32)
-    array = np.expand_dims(array, axis=0)
-
-    return array
-
-
 def predict_image(image):
 
     if model is None:
         raise RuntimeError("The trained model is not available.")
 
-    input_array = preprocess_image(image)
+    input_array = np.expand_dims(preprocess_image(image), axis=0)
     probabilities = model.predict(
         input_array,
         verbose=0
