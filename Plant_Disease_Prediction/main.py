@@ -34,13 +34,13 @@ st.set_page_config(
 # =========================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-_configured_model_path = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model_improved.keras")
+_configured_model_path = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")
 MODEL_PATH = (
     _configured_model_path
     if os.path.isabs(_configured_model_path)
     else os.path.join(BASE_DIR, _configured_model_path)
 )
-MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "improved")
+MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
 BACKGROUND_PATH = "home_page.jpeg"
 
 DATA_DIR = "data"
@@ -59,7 +59,7 @@ REAL_WORLD_FILE = os.path.join(
     "real_world_tests.csv"
 )
 
-MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "improved")
+MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
 
 DEFAULT_THRESHOLD = 0.60
 
@@ -818,7 +818,7 @@ def generate_gradcam(image, class_index):
         outputs=[last_conv_layer.output, model.output]
     )
 
-    input_array = preprocess_image(image)
+    input_array = np.expand_dims(preprocess_image(image), axis=0)
     input_tensor = tf.convert_to_tensor(input_array)
 
     with tf.GradientTape() as tape:
