@@ -31,3 +31,15 @@ def test_production_and_candidate_checkpoints_are_not_modified_by_ui_fix():
     # UI compatibility tests intentionally don't load, retrain, or rewrite models.
     source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
     assert "trained_plant_disease_model.keras" in source
+
+
+def test_runtime_pins_keep_streamlit_and_protobuf_compatible():
+    requirements = (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8")
+    pins = {
+        line.split("==", 1)[0]: line.split("==", 1)[1]
+        for line in requirements.splitlines()
+        if "==" in line and not line.lstrip().startswith("#")
+    }
+    assert pins.get("streamlit") == "1.22.0"
+    assert pins.get("protobuf") == "3.20.3"
+    assert pins.get("tensorflow") == "2.15.0"
