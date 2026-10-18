@@ -63,6 +63,7 @@ train_generator = train_datagen.flow_from_directory(
 valid_generator = valid_datagen.flow_from_directory(
     VALID_DIR,
     target_size=IMAGE_SIZE,
+    interpolation="bilinear",
     batch_size=BATCH_SIZE,
     class_mode="categorical",
     shuffle=False,
