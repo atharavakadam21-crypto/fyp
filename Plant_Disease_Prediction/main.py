@@ -1,4 +1,5 @@
 import os
+import hashlib
 import csv
 import json
 import base64
@@ -1673,6 +1674,31 @@ render_html(
     </div>
     """
 )
+
+# Read-only diagnostics help verify which checkpoint is actually loaded.
+with st.sidebar.expander("Model diagnostics", expanded=False):
+    st.caption("Resolved checkpoint path")
+    st.code(MODEL_PATH, language=None)
+    if model is not None:
+        st.write("Input shape:", model.input_shape)
+        st.write("Output shape:", model.output_shape)
+        st.write("Class labels:", len(CLASS_NAMES))
+        try:
+            _stat = os.stat(MODEL_PATH)
+            st.write("Checkpoint size:", f"{_stat.st_size:,} bytes")
+            @st.cache_data(show_spinner=False)
+            def _checkpoint_sha256(path, size, modified_time):
+                digest = hashlib.sha256()
+                with open(path, "rb") as checkpoint_file:
+                    for chunk in iter(lambda: checkpoint_file.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                return digest.hexdigest()
+            st.caption("Checkpoint SHA-256")
+            st.code(_checkpoint_sha256(MODEL_PATH, _stat.st_size, _stat.st_mtime), language=None)
+        except OSError as diagnostic_error:
+            st.warning(f"Could not inspect checkpoint file: {diagnostic_error}")
+    else:
+        st.error("No checkpoint is currently loaded.")
 
 
 # =========================================================
