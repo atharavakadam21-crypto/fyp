@@ -2,7 +2,7 @@
 
 **Status: OPEN — reproduction blocked in the remote GitHub editing environment.**
 
-Previously recorded results are approximately 9.14% and 9.22% on the external set (2,374 images). The difference is small but material; it is not safe to assign a cause without per-image outputs from both scripts and the same checkpoint. The two scripts historically differed in their handling of skipped/unmapped folders and preprocessing; those are hypotheses only, not a verified explanation.
+Previously recorded results are approximately 9.14% and 9.22% on the external set (2,374 images). The difference is small but material; it is not safe to assign a cause without per-image outputs from both scripts and the same checkpoint. The scripts have separate code paths for file inclusion and skipped-image accounting. Potential causes to inspect include denominator differences, corrupt/unreadable images, unmapped folders, model-path differences, and preprocessing changes across historical runs. None is confirmed as the cause.
 
 The old scripts now have deprecation headers. `evaluate.py` is the canonical entry point and writes one row per readable image, explicit skipped-image details, mapped-only accuracy, and all-readable-image accuracy (unmapped labels count as incorrect in the latter).
 
