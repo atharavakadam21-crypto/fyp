@@ -5,7 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from PIL import Image, ImageOps
+from PIL import Image
+from preprocess import preprocess_image
 from sklearn.metrics import confusion_matrix
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -81,9 +82,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 def load_image(path):
     with Image.open(path) as image:
-        image = ImageOps.exif_transpose(image).convert("RGB")
-        image = image.resize(IMAGE_SIZE, resample=Image.Resampling.BILINEAR)
-        return np.asarray(image, dtype=np.float32)
+        return preprocess_image(image, image_size=IMAGE_SIZE)
 
 
 def main():
