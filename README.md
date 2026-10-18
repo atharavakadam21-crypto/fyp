@@ -38,3 +38,19 @@ To run any of these projects locally, follow these steps:
    ```bash
    git clone https://github.com/animesh1012/machineLearning.git
    cd machineLearning
+
+
+## Plant Disease Prediction — Model promotion process
+
+The PlantVision model is **not promoted automatically**. Keep `trained_plant_disease_model.keras` as the protected production checkpoint and save experiments only to `trained_plant_disease_model_improved.keras` (or another candidate path).
+
+From `Plant_Disease_Prediction/`, run the preprocessing regression test, verify the class mapping, evaluate production and candidate with the same pipeline, and run the promotion gate:
+
+```bash
+python -m pytest tests/test_preprocess.py -q
+python scripts/verify_class_mapping.py --model trained_plant_disease_model.keras
+python scripts/verify_class_mapping.py --model trained_plant_disease_model_improved.keras
+python scripts/promotion_gate.py
+```
+
+The gate returns PASS only if preprocessing tests and both class-mapping checks pass, candidate validation accuracy does not regress, candidate external mapped-class accuracy is not lower, and candidate held-out validation ECE is no worse than production. Missing datasets, invalid mappings, or missing metrics are failures. The gate is read-only and never replaces the production model. External label mapping must be reviewed against the actual external folder names before relying on mapped-class scores.
