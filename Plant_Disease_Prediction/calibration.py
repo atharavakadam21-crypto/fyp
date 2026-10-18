@@ -185,18 +185,13 @@ def main() -> int:
     max_entropy = float(np.log(len(names)))
     rows = []
     for method in ("max_softmax", "entropy"):
-        scores = conf_after if method == "max_softmax" else -(
-            -(after * np.log(np.clip(after, 1e-12, 1.0))).sum(axis=1)
-        )
-        # max_softmax: accept score >= threshold. entropy: score is negative
-        # entropy, so the same thresholding convention applies.
         for threshold in np.linspace(0.0, 1.0, 21):
             if method == "entropy":
                 entropy = -(after * np.log(np.clip(after, 1e-12, 1.0))).sum(axis=1)
                 accepted = entropy <= threshold * max_entropy
                 threshold_value = threshold * max_entropy
             else:
-                accepted = scores >= threshold
+                accepted = conf_after >= threshold
                 threshold_value = threshold
             coverage = float(accepted.mean())
             accuracy = float(correct_after[accepted].mean()) if accepted.any() else None
