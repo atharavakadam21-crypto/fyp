@@ -16,3 +16,11 @@
 ## T5 — Generate calibration plots and ECE metrics
 - **Blocker:** The validation images and Keras checkpoint are local-only and cannot be executed in this remote GitHub editor. Numeric ECE and PNG artifacts therefore cannot be truthfully generated here.
 - **Workaround:** Run `python calibration.py` with the original validation directory. The script fits temperature on one deterministic half and reports on the other; it saves the required PNG/CSV/JSON artifacts without touching the model file.
+
+## T6 — Inspect serialized production/candidate checkpoints
+- **Blocker:** The `.keras` checkpoint binaries are not available to the remote editor; the notebook's saved model summary cannot prove the current files have identical layers or weights.
+- **Workaround:** Run `scripts/inspect_model.py` for production and candidate locally. The script emits layer configs, input/output shapes, parameter count, and weight names/shapes without writing to either checkpoint.
+
+## T7 — Execute promotion gate
+- **Blocker:** The gate needs the local validation dataset, external dataset, both checkpoint files, and a reconciled external label map. Those files are not available here, and external label inventory is still incomplete.
+- **Workaround:** Run `python scripts/promotion_gate.py` locally after completing T4. It fails closed on missing data or failed checks and does not promote or overwrite any model.
