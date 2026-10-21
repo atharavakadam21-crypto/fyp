@@ -50,7 +50,7 @@ REAL_WORLD_FILE = os.path.join(
     "real_world_tests.csv"
 )
 
-MODEL_VERSION = "v1.0"
+# Preserve PLANTVISION_MODEL_VERSION so experiments are visibly labeled in the UI.
 
 DEFAULT_THRESHOLD = 0.60
 
@@ -1030,10 +1030,12 @@ def disease_recognition():
         confidence = float(predictions[top_index])
         label = CLASS_NAMES[top_index]
 
+        # A confidence threshold is not a true out-of-distribution detector.
+        # Avoid claiming that a high-scoring prediction is a verified known class.
         status = (
-            "KNOWN CLASS"
+            "THRESHOLD MET — CLASS NOT VERIFIED"
             if confidence >= threshold
-            else "UNKNOWN / LOW CONFIDENCE"
+            else "LOW CONFIDENCE — REVIEW"
         )
 
         st.session_state["prediction_result"] = {
@@ -1070,7 +1072,11 @@ def disease_recognition():
         """
     )
 
-    badge = "KNOWN CLASS" if status == "KNOWN CLASS" else "LOW CONFIDENCE"
+    badge = (
+        "THRESHOLD MET"
+        if status == "THRESHOLD MET — CLASS NOT VERIFIED"
+        else "LOW CONFIDENCE"
+    )
 
     render_html(
         f"""
@@ -1086,9 +1092,14 @@ def disease_recognition():
         """
     )
 
-    if status != "KNOWN CLASS":
+    if status != "THRESHOLD MET — CLASS NOT VERIFIED":
         st.error(
-            "⚠️ Low confidence: this image may not closely match one of the model's trained classes."
+            "⚠️ Low confidence: review the image and seek expert confirmation."
+        )
+    else:
+        st.info(
+            "The confidence threshold was met, but this does not prove the image "
+            "belongs to a supported class or that the diagnosis is correct."
         )
 
     render_html(
@@ -1248,7 +1259,7 @@ def real_world_testing():
         <div class="info-value">
         Upload your own photographs. Select the actual class after viewing
         the prediction. The resulting score is a separate real-world test
-        metric and is not part of the 93.31% validation accuracy.
+        metric and must be reported separately from validation metrics.
         </div>
         </div>
         </div>
