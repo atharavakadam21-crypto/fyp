@@ -1,0 +1,25 @@
+name: PlantVision Python checks
+
+on:
+  push:
+    branches: [main, plantvision-final-year-upgrade]
+    paths:
+      - 'Plant_Disease_Prediction/**/*.py'
+      - '.github/workflows/plantvision-syntax.yml'
+  pull_request:
+    paths:
+      - 'Plant_Disease_Prediction/**/*.py'
+      - '.github/workflows/plantvision-syntax.yml'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Compile project Python files
+        run: python -m compileall -q Plant_Disease_Prediction
