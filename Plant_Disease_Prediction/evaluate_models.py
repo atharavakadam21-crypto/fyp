@@ -44,6 +44,12 @@ SEED = 42
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
+    parser.add_argument(
+        "--train-dir",
+        type=Path,
+        default=DEFAULT_DATA_DIR.parent / "train",
+        help="Training directory used to verify that class folders match validation.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("reports/model_comparison"))
     parser.add_argument(
         "--models",
@@ -92,6 +98,24 @@ def main() -> None:
                 f"Model checkpoint for '{name}' not found: {path}\n"
                 "This script intentionally does not download or replace model files."
             )
+
+    if args.train_dir.is_dir():
+        train_class_names = sorted(
+            path.name for path in args.train_dir.iterdir() if path.is_dir()
+        )
+        validation_class_names = sorted(
+            path.name for path in args.data_dir.iterdir() if path.is_dir()
+        )
+        if train_class_names != validation_class_names:
+            raise ValueError(
+                "Training and validation class folders do not match exactly. "
+                "Resolve the mapping before comparing model results."
+            )
+    else:
+        raise FileNotFoundError(
+            f"Training directory not found: {args.train_dir}. "
+            "Pass --train-dir to verify class folder alignment."
+        )
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
