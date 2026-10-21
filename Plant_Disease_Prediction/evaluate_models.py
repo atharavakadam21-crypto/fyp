@@ -11,6 +11,7 @@ Run from the Plant_Disease_Prediction directory:
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import json
 import time
@@ -50,6 +51,12 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_DATA_DIR.parent / "train",
         help="Training directory used to verify that class folders match validation.",
     )
+    parser.add_argument(
+        "--app-file",
+        type=Path,
+        default=Path("main.py"),
+        help="Application source containing the CLASS_NAMES list to verify label order.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("reports/model_comparison"))
     parser.add_argument(
         "--models",
@@ -81,6 +88,22 @@ def write_csv(path: Path, header: list[str], rows: list[list[Any]]) -> None:
         writer = csv.writer(handle)
         writer.writerow(header)
         writer.writerows(rows)
+
+
+def read_app_class_names(path: Path) -> list[str]:
+    """Read CLASS_NAMES using the AST without importing/running the Streamlit app."""
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Application file not found: {path}. Pass --app-file if needed."
+        )
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            if any(isinstance(target, ast.Name) and target.id == "CLASS_NAMES" for target in node.targets):
+                value = ast.literal_eval(node.value)
+                if isinstance(value, list) and all(isinstance(item, str) for item in value):
+                    return value
+    raise ValueError(f"No literal string-list assignment named CLASS_NAMES found in {path}")
 
 
 def main() -> None:
@@ -133,6 +156,22 @@ def main() -> None:
 
     if not class_names:
         raise ValueError(f"No class folders found in {args.data_dir}")
+
+    app_class_names = read_app_class_names(args.app_file)
+    if app_class_names != class_names:
+        mismatch = next(
+            (
+                index for index, pair in enumerate(zip(app_class_names, class_names))
+                if pair[0] != pair[1]
+            ),
+            min(len(app_class_names), len(class_names)),
+        )
+        raise ValueError(
+            "The CLASS_NAMES list in main.py does not exactly match the sorted "
+            "validation folder mapping. Do not interpret metrics until this is "
+            f"resolved. First mismatch index: {mismatch}; "
+            f"app classes={len(app_class_names)}, folder classes={len(class_names)}."
+        )
 
     summary: dict[str, Any] = {
         "evaluation_split": "validation",
