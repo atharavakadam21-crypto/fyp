@@ -12,7 +12,7 @@ $ProjectRoot = (Resolve-Path $PSScriptRoot).Path
 $ParentDirectory = Split-Path -Parent $ProjectRoot
 $ProjectName = Split-Path -Leaf $ProjectRoot
 $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$BackupPath = Join-Path $ParentDirectory "\${ProjectName}_BACKUP_\${Timestamp}.zip"
+$BackupPath = Join-Path $ParentDirectory "${ProjectName}_BACKUP_${Timestamp}.zip"
 
 $ExcludedDirectoryNames = @(
     ".git",
