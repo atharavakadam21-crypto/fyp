@@ -29,7 +29,7 @@ $ExcludedDirectoryNames = @(
 
 $Files = Get-ChildItem -LiteralPath $ProjectRoot -File -Recurse -Force |
     Where-Object {
-        $relative = [System.IO.Path]::GetRelativePath($ProjectRoot, $_.FullName)
+        $relative = $_.FullName.Substring($ProjectRoot.Length).TrimStart([char]92, [char]47)
         $parts = $relative -split '[\\/]'
         -not ($parts | Where-Object { $ExcludedDirectoryNames -contains $_ })
     }
@@ -64,7 +64,7 @@ try {
     $ManifestLines.Add("SHA256 | SizeBytes | RelativePath")
 
     foreach ($File in $Files) {
-        $RelativePath = [System.IO.Path]::GetRelativePath($ProjectRoot, $File.FullName)
+        $RelativePath = $File.FullName.Substring($ProjectRoot.Length).TrimStart([char]92, [char]47)
         $EntryName = $RelativePath.Replace('\', '/')
         $Entry = $Archive.CreateEntry(
             $EntryName,
