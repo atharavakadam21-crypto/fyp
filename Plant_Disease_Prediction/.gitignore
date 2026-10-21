@@ -1,0 +1,24 @@
+# Local datasets
+New Plant Diseases Dataset*/
+data/
+external_domain_adaptation/
+external_dataset/
+External_Dataset/
+
+# Model checkpoints (keep these backed up separately)
+*.keras
+*.h5
+*.hdf5
+
+# Local runtime and generated artifacts
+.venv/
+.venv-model/
+__pycache__/
+*.py[cod]
+.DS_Store
+.streamlit/secrets.toml
+
+# Generated evaluation outputs; keep report source/docs tracked
+reports/model_comparison/
+reports/model_checkpoint_inspection.json
+training_hist_improved_experiment.json
