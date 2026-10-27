@@ -97,9 +97,6 @@ def main():
     stem = IMAGE_PATH.stem
     original = image.convert("RGB")
     heat_img = Image.fromarray(np.uint8(np.clip(heat, 0, 1) * 255)).resize(image.size)
-    colored = Image.fromarray(
-        np.uint8(tf.keras.utils.array_to_img(heat_img).convert("RGB"))
-    )
     # Use matplotlib's jet map to match the app's overlay style.
     import matplotlib.cm as cm
     heat_values = np.asarray(heat_img, dtype=np.float32) / 255.0
