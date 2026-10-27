@@ -131,14 +131,45 @@ def gradcam(model, image, class_index):
     raise RuntimeError("Could not generate a valid Grad-CAM map.") from last_error
 
 
-def probabilities_for(model, image):
-    values = np.asarray(model(preprocess(image), training=False)[0], dtype=np.float64)
-    # Support either softmax probabilities or raw logits.
-    if np.all(values >= 0) and np.isclose(values.sum(), 1.0, atol=1e-3):
-        return np.clip(values, 1e-7, 1.0)
-    shifted = values - values.max()
-    exp = np.exp(shifted)
-    return exp / exp.sum()
+def build_scorers(model):
+    """Build reusable probability and pre-softmax-logit scorers."""
+    probabilities_model = model
+    softmax_head = next((
+        layer for layer in reversed(model.layers)
+        if isinstance(layer, tf.keras.layers.Dense)
+        and layer.activation == tf.keras.activations.softmax
+    ), None)
+    logits_model = None
+    if softmax_head is not None:
+        try:
+            logits_model = tf.keras.Model(model.inputs, softmax_head.input)
+        except Exception:
+            logits_model = None
+
+    def scores(image):
+        batch = preprocess(image)
+        values = np.asarray(probabilities_model(batch, training=False)[0], dtype=np.float64)
+        if np.all(values >= 0) and np.isclose(values.sum(), 1.0, atol=1e-3):
+            probabilities = np.clip(values, 1e-7, 1.0)
+        else:
+            shifted = values - values.max()
+            exp = np.exp(shifted)
+            probabilities = exp / exp.sum()
+
+        if logits_model is not None:
+            features = logits_model(batch, training=False)
+            logits = tf.linalg.matmul(features, softmax_head.kernel)
+            if softmax_head.use_bias:
+                logits = tf.nn.bias_add(logits, softmax_head.bias)
+            logits = np.asarray(logits[0], dtype=np.float64)
+            score_kind = "pre_softmax_logit"
+        else:
+            # Fallback is explicitly marked because it cannot undo softmax saturation.
+            logits = np.log(np.clip(probabilities, 1e-7, 1.0))
+            score_kind = "log_probability_fallback"
+        return probabilities, logits, score_kind
+
+    return scores
 
 
 def save_heatmap_and_overlay(image, heat, stem, output_dir):
@@ -162,9 +193,9 @@ def masked_image(rgb, selected, mean_color):
     return Image.fromarray(np.uint8(np.clip(flat.reshape(rgb.shape), 0, 255)))
 
 
-def validate_image(model, classes, image_path, rng):
+def validate_image(model, classes, image_path, rng, score_image):
     image = Image.open(image_path).convert("RGB")
-    probabilities = probabilities_for(model, image)
+    probabilities, logits, score_kind = score_image(image)
     top_indices = np.argsort(probabilities)[::-1][:3]
     class_index = int(top_indices[0])
     heat, layer_name, feature_shape = gradcam(model, image, class_index)
@@ -176,28 +207,40 @@ def validate_image(model, classes, image_path, rng):
     flat_rgb = rgb.reshape(-1, 3)
     mean_color = flat_rgb.mean(axis=0)
     baseline = float(probabilities[class_index])
+    baseline_logit = float(logits[class_index])
     rows = []
 
     for fraction in MASK_FRACTIONS:
         count = max(1, int(round(fraction * flat_heat.size)))
         salient = np.argpartition(flat_heat, -count)[-count:]
-        salient_score = float(probabilities_for(
-            model, masked_image(rgb, salient, mean_color)
-        )[class_index])
+        salient_probabilities, salient_logits, _ = score_image(
+            masked_image(rgb, salient, mean_color)
+        )
+        salient_score = float(salient_probabilities[class_index])
+        salient_logit = float(salient_logits[class_index])
         random_scores = []
+        random_logit_scores = []
         for _ in range(RANDOM_TRIALS):
             selected = rng.choice(flat_heat.size, size=count, replace=False)
-            random_scores.append(float(probabilities_for(
-                model, masked_image(rgb, selected, mean_color)
-            )[class_index]))
+            random_probabilities, random_logits, _ = score_image(
+                masked_image(rgb, selected, mean_color)
+            )
+            random_scores.append(float(random_probabilities[class_index]))
+            random_logit_scores.append(float(random_logits[class_index]))
         random_mean = float(np.mean(random_scores))
         random_std = float(np.std(random_scores, ddof=1))
+        random_logit_mean = float(np.mean(random_logit_scores))
+        random_logit_std = float(np.std(random_logit_scores, ddof=1))
         salient_drop = baseline - salient_score
         random_drop_mean = baseline - random_mean
+        salient_logit_drop = baseline_logit - salient_logit
+        random_logit_drop_mean = baseline_logit - random_logit_mean
         rows.append({
             "image": str(image_path),
             "predicted_class": classes[class_index],
             "confidence": baseline,
+            "target_logit": baseline_logit,
+            "score_kind": score_kind,
             "target_layer": layer_name,
             "feature_map_shape": str(feature_shape),
             "heatmap_min": float(heat.min()),
@@ -208,6 +251,12 @@ def validate_image(model, classes, image_path, rng):
             "confidence_after_salient_mask": salient_score,
             "confidence_after_random_mask_mean": random_mean,
             "confidence_after_random_mask_std": random_std,
+            "target_logit_after_salient_mask": salient_logit,
+            "target_logit_after_random_mask_mean": random_logit_mean,
+            "target_logit_after_random_mask_std": random_logit_std,
+            "salient_logit_drop": salient_logit_drop,
+            "random_logit_drop_mean": random_logit_drop_mean,
+            "salient_logit_drop_exceeds_random_mean": salient_logit_drop > random_logit_drop_mean,
             "salient_confidence_drop": salient_drop,
             "random_confidence_drop_mean": random_drop_mean,
             "salient_drop_exceeds_random_mean": salient_drop > random_drop_mean,
@@ -222,7 +271,8 @@ def validate_image(model, classes, image_path, rng):
             f"{row['confidence_after_salient_mask']:.4f}; random mean "
             f"{row['confidence_after_random_mask_mean']:.4f} "
             f"± {row['confidence_after_random_mask_std']:.4f}; "
-            f"salient drop larger={row['salient_drop_exceeds_random_mean']}"
+            f"probability-drop larger={row['salient_drop_exceeds_random_mean']}; "
+            f"logit-drop larger={row['salient_logit_drop_exceeds_random_mean']}"
         )
     print("  Top predictions:")
     for index in top_indices:
@@ -254,9 +304,10 @@ def main():
     model = tf.keras.models.load_model(MODEL_PATH, compile=False)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(SEED)
+    score_image = build_scorers(model)
     all_rows = []
     for path in paths:
-        all_rows.extend(validate_image(model, classes, path, rng))
+        all_rows.extend(validate_image(model, classes, path, rng, score_image))
 
     report_path = OUTPUT_DIR / "gradcam_validation_report.csv"
     fieldnames = list(all_rows[0].keys()) if all_rows else []
