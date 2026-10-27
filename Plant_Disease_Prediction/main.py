@@ -820,76 +820,108 @@ def dashboard():
 
 
 # =========================================================
-# GRAD-CAM
+# GRAD-CAM EXPLAINABILITY
 # =========================================================
 
-def generate_gradcam(image, class_index):
-    """Generate a standard Grad-CAM explanation using a spatial feature layer."""
-
+def generate_gradcam_details(image, class_index):
+    """Return original image, raw heatmap, overlay, and layer metadata."""
     if model is None:
         raise RuntimeError("The trained model is not available.")
 
-    # conv2d_7 retains a 12x12 spatial map; the final convolution is only 4x4.
-    try:
-        target_layer = model.get_layer("conv2d_7")
-    except ValueError:
-        convolution_layers = [
+    class_index = int(class_index)
+    if class_index < 0 or class_index >= len(CLASS_NAMES):
+        raise ValueError(f"Invalid class index: {class_index}")
+
+    # Prefer a spatially detailed convolution. Fall back only to a layer
+    # that can actually be connected to the model output.
+    preferred_names = ("conv2d_7", "conv2d_8", "conv2d_9")
+    candidates = []
+    for name in preferred_names:
+        try:
+            layer = model.get_layer(name)
+            if isinstance(layer, tf.keras.layers.Conv2D):
+                candidates.append(layer)
+        except ValueError:
+            pass
+    if not candidates:
+        candidates = [
             layer for layer in model.layers
             if isinstance(layer, tf.keras.layers.Conv2D)
         ]
-        if not convolution_layers:
-            raise RuntimeError("No convolutional layer was found for Grad-CAM.")
-        target_layer = convolution_layers[-1]
 
-    grad_model = tf.keras.models.Model(
-        inputs=model.inputs,
-        outputs=[target_layer.output, model.output],
-    )
+    if not candidates:
+        raise RuntimeError("No top-level Conv2D layer is available for Grad-CAM.")
+
+    grad_model = None
+    target_layer = None
+    last_error = None
+    for candidate in candidates:
+        try:
+            grad_model = tf.keras.models.Model(
+                inputs=model.inputs,
+                outputs=[candidate.output, model.output],
+            )
+            # Force a forward pass to catch disconnected or incompatible layers.
+            grad_model(tf.convert_to_tensor(preprocess_image(image)), training=False)
+            target_layer = candidate
+            break
+        except Exception as error:
+            last_error = error
+    if grad_model is None or target_layer is None:
+        raise RuntimeError(
+            "Could not connect a convolutional feature map to the model output."
+        ) from last_error
 
     input_tensor = tf.convert_to_tensor(preprocess_image(image))
-
     with tf.GradientTape() as tape:
         activations, predictions = grad_model(input_tensor, training=False)
-        class_score = predictions[:, int(class_index)]
-
+        class_score = predictions[:, class_index]
     gradients = tape.gradient(class_score, activations)
     if gradients is None:
-        raise RuntimeError("Could not calculate gradients for the selected class.")
+        raise RuntimeError("Gradients are disconnected for the selected class.")
 
-    # Standard Grad-CAM: average gradients over the spatial dimensions.
-    channel_weights = tf.reduce_mean(gradients, axis=(1, 2))
-    heatmap = tf.reduce_sum(
-        activations[0] * channel_weights[0][tf.newaxis, tf.newaxis, :],
+    # Standard Grad-CAM: spatially average the first-order gradients.
+    weights = tf.reduce_mean(gradients, axis=(1, 2))
+    raw = tf.reduce_sum(
+        activations[0] * weights[0][tf.newaxis, tf.newaxis, :],
         axis=-1,
     )
-    heatmap = tf.nn.relu(heatmap)
+    raw = tf.nn.relu(raw)
+    maximum = tf.reduce_max(raw)
+    normalized = tf.math.divide_no_nan(raw, maximum).numpy()
 
-    maximum = tf.reduce_max(heatmap)
-    heatmap = tf.math.divide_no_nan(heatmap, maximum).numpy()
-
-    if not np.isfinite(heatmap).all() or float(np.max(heatmap)) <= 0:
+    if not np.isfinite(normalized).all() or float(np.max(normalized)) <= 0:
         raise RuntimeError(
-            "Grad-CAM produced an empty heatmap for this class. "
-            "Try another image or inspect the model prediction."
+            "Grad-CAM returned an empty/non-finite map for this class."
         )
 
-    # Resize continuous heatmap before applying the colour map.
+    # Keep the normalized grayscale heatmap separate from the colour overlay.
     heatmap_image = Image.fromarray(
-        np.uint8(np.clip(heatmap, 0.0, 1.0) * 255)
+        np.uint8(np.clip(normalized, 0.0, 1.0) * 255)
     ).resize(image.size, Image.Resampling.BILINEAR)
-
     heatmap_array = np.asarray(heatmap_image, dtype=np.float32) / 255.0
-    color_map = cm.get_cmap("jet")
-    colored_array = np.uint8(
-        np.clip(color_map(heatmap_array)[..., :3], 0.0, 1.0) * 255
+    colored = np.uint8(
+        np.clip(cm.get_cmap("jet")(heatmap_array)[..., :3], 0.0, 1.0) * 255
     )
+    original_image = image.convert("RGB")
+    colored_heatmap = Image.fromarray(colored).convert("RGB")
+    overlay = Image.blend(original_image, colored_heatmap, alpha=0.35)
 
-    colored_heatmap = Image.fromarray(colored_array).convert("RGB")
-    original = image.convert("RGB")
+    return {
+        "original": original_image,
+        "heatmap": heatmap_image.convert("RGB"),
+        "overlay": overlay,
+        "layer_name": target_layer.name,
+        "feature_shape": tuple(int(d) if d is not None else -1 for d in activations.shape[1:]),
+        "heatmap_min": float(np.min(normalized)),
+        "heatmap_max": float(np.max(normalized)),
+        "heatmap_std": float(np.std(normalized)),
+    }
 
-    # A lighter blend preserves the leaf details beneath the explanation.
-    overlay = Image.blend(original, colored_heatmap, alpha=0.35)
-    return overlay
+
+def generate_gradcam(image, class_index):
+    """Backward-compatible Grad-CAM overlay helper."""
+    return generate_gradcam_details(image, class_index)["overlay"]
 
 # =========================================================
 # DISEASE RECOGNITION
@@ -1119,16 +1151,32 @@ def disease_recognition():
     )
 
     try:
-        gradcam_image = generate_gradcam(
+        explanation = generate_gradcam_details(
             result["image"],
             int(indices[0])
         )
-
-        st.image(
-            gradcam_image,
-            caption="Grad-CAM — Regions influencing the prediction",
-            use_container_width=True
+        st.caption(
+            f"Grad-CAM uses {explanation['layer_name']} "
+            f"(feature map {explanation['feature_shape']}). "
+            "Highlighted regions indicate model sensitivity, not a confirmed lesion."
         )
+        explanation_cols = st.columns(3)
+        explanation_panels = [
+            ("Original image", "original"),
+            ("Raw activation heatmap", "heatmap"),
+            ("Grad-CAM overlay", "overlay"),
+        ]
+        for column, (caption, key) in zip(explanation_cols, explanation_panels):
+            with column:
+                st.image(explanation[key], caption=caption, use_container_width=True)
+        with st.expander("Grad-CAM diagnostics"):
+            st.write({
+                "target_layer": explanation["layer_name"],
+                "feature_map_shape": explanation["feature_shape"],
+                "heatmap_min": round(explanation["heatmap_min"], 5),
+                "heatmap_max": round(explanation["heatmap_max"], 5),
+                "heatmap_standard_deviation": round(explanation["heatmap_std"], 5),
+            })
 
     except Exception as error:
         st.warning(f"Grad-CAM could not be generated: {error}")
@@ -1362,13 +1410,29 @@ def real_world_testing():
             st.warning("Incorrect prediction recorded. This sample is useful for error analysis.")
 
     try:
-        gradcam_image = generate_gradcam(image, top_index)
-
-        st.image(
-            gradcam_image,
-            caption="Grad-CAM — Real-World Test",
-            use_container_width=True
+        explanation = generate_gradcam_details(image, top_index)
+        st.caption(
+            f"Grad-CAM uses {explanation['layer_name']} "
+            f"(feature map {explanation['feature_shape']}). "
+            "Highlighted regions indicate model sensitivity, not a confirmed lesion."
         )
+        explanation_cols = st.columns(3)
+        explanation_panels = [
+            ("Original image", "original"),
+            ("Raw activation heatmap", "heatmap"),
+            ("Grad-CAM overlay", "overlay"),
+        ]
+        for column, (caption, key) in zip(explanation_cols, explanation_panels):
+            with column:
+                st.image(explanation[key], caption=caption, use_container_width=True)
+        with st.expander("Grad-CAM diagnostics"):
+            st.write({
+                "target_layer": explanation["layer_name"],
+                "feature_map_shape": explanation["feature_shape"],
+                "heatmap_min": round(explanation["heatmap_min"], 5),
+                "heatmap_max": round(explanation["heatmap_max"], 5),
+                "heatmap_standard_deviation": round(explanation["heatmap_std"], 5),
+            })
 
     except Exception as error:
         st.warning(f"Grad-CAM could not be generated: {error}")
