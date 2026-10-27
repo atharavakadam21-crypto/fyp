@@ -139,6 +139,39 @@ def inject_css():
         animation:pv-rise .42s ease both;
     }}
     @keyframes pv-rise {{ from {{ opacity:0; transform:translateY(9px); }} to {{ opacity:1; transform:translateY(0); }} }}
+    @keyframes pv-scroll-reveal {{
+        from {{ opacity: 0; transform: translateY(28px); filter: blur(3px); }}
+        to {{ opacity: 1; transform: translateY(0); filter: blur(0); }}
+    }}
+    /* Scroll-driven reveal in modern Chromium; unsupported browsers keep content visible. */
+    @supports (animation-timeline: view()) {{
+        .hero, .hero-card, .section-title, .glass-card, .metric-card,
+        .metric-grid-card, .result-card, .upload-card, .info-row, .data-row,
+        [data-testid="stMetric"], [data-testid="stExpander"], .stDataFrame {{
+            animation-name: pv-scroll-reveal;
+            animation-duration: 1ms;
+            animation-timing-function: linear;
+            animation-fill-mode: both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 38%;
+        }}
+        .hero-title, .hero-description, .hero-desc, .hero-eyebrow, .hero-tag {{
+            animation-name: pv-scroll-reveal;
+            animation-duration: 1ms;
+            animation-timing-function: linear;
+            animation-fill-mode: both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 55%;
+        }}
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+        *, *::before, *::after {{
+            scroll-behavior: auto !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }}
+    }}
     @keyframes pv-glow {{ 0%,100% {{ box-shadow:0 0 14px rgba(104,240,170,.10); }} 50% {{ box-shadow:0 0 27px rgba(104,240,170,.22); }} }}
     ::selection {{ background:rgba(104,240,170,.28); color:white; }}
     ::-webkit-scrollbar {{ width:9px; height:9px; }}
@@ -194,7 +227,11 @@ def inject_css():
     [data-testid="stSidebar"] {{ background:linear-gradient(180deg,rgba(3,19,12,.98),rgba(5,31,20,.98)) !important; border-right:1px solid var(--pv-border); }}
     [data-testid="stSidebar"] > div:first-child {{ background:transparent; }}
     [data-testid="stSidebar"] .block-container {{ padding:1.7rem 1rem 2rem; }}
-    .brand {{ color:var(--pv-mint); font-family:'Manrope',sans-serif; font-size:26px; font-weight:800; letter-spacing:-1.1px; }}
+    .brand-lockup {{ display:flex; align-items:center; gap:11px; margin-bottom:4px; }}
+    .brand-logo {{ display:block; width:47px; height:47px; flex:0 0 47px; filter:drop-shadow(0 0 12px rgba(104,240,170,.16)); }}
+    .brand {{ color:var(--pv-mint); font-family:'Manrope',sans-serif; font-size:22px; line-height:1.1; font-weight:800; letter-spacing:-1px; white-space:nowrap; }}
+    .brand span {{ color:#f2fff6; }}
+    .brand-sub {{ color:#83a994; font-size:9px; font-weight:800; letter-spacing:1.45px; text-transform:uppercase; margin:5px 0 22px; }}
     .brand-sub {{ color:#83a994; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; margin:4px 0 22px; }}
     [data-testid="stSidebar"] [data-testid="stRadio"] > label {{ color:#9bbda8; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }}
     [data-testid="stSidebar"] [role="radiogroup"] {{ gap:7px; }}
@@ -1615,8 +1652,13 @@ def about():
 
 render_html(
     """
-    <div class="brand">🌿 PlantVision AI</div>
-    <div class="brand-sub">Intelligent Plant Health</div>
+    <div class="brand-lockup">
+      <img class="brand-logo" src="https://raw.githubusercontent.com/atharavakadam21-crypto/fyp/main/Plant_Disease_Prediction/assets/plantvision-logo.svg" alt="PlantVision AI leaf logo">
+      <div>
+        <div class="brand">PlantVision <span>AI</span></div>
+        <div class="brand-sub">Intelligent Plant Health</div>
+      </div>
+    </div>
     """
 )
 
