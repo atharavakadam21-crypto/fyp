@@ -304,7 +304,7 @@ KNOWLEDGE_DOCUMENTS = [
     },
     {
         "id": "PV-SPIDER-MITES-01",
-        "title": "Spider mites: signs and nonchemical checks",
+        "title": "Tomato spider mites: signs and nonchemical checks",
         "source": "UC Statewide IPM Program",
         "source_title": "Spider mites",
         "source_url": "https://ipm.ucanr.edu/home-and-landscape/spider-mites/",
@@ -357,7 +357,7 @@ _STOPWORDS = {
     "plant", "plants", "disease", "diseases", "symptom", "symptoms",
     "prevention", "prevent", "treatment", "treatments", "management",
     "guidance", "general", "common", "check", "checks", "leaf", "leaves",
-    "crop", "crops", "care", "condition", "conditions", "help", "advice",
+    "crop", "crops", "care", "condition", "conditions", "help", "advice", "two", "spotted",
 }
 _TOKEN_ALIASES = {
     "viral": "virus",
@@ -366,6 +366,7 @@ _TOKEN_ALIASES = {
     "spots": "spot",
     "lesions": "lesion",
     "leaves": "leaf",
+    "mites": "mite",
 }
 
 
