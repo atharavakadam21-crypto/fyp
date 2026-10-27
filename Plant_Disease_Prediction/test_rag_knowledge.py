@@ -1,7 +1,10 @@
 """Unit tests for PlantVision AI's dependency-free retrieval baseline."""
+import json
 import unittest
+from unittest.mock import patch
 
-from rag_knowledge import KNOWLEDGE_DOCUMENTS, retrieve_knowledge
+from rag_embeddings import cosine_similarity, embed_texts
+from rag_knowledge import KNOWLEDGE_DOCUMENTS, _EMBEDDING_CACHE, retrieve_knowledge
 
 
 class RetrievalKnowledgeTests(unittest.TestCase):
@@ -84,6 +87,64 @@ class RetrievalKnowledgeTests(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     retrieve_knowledge("apple scab", top_k=value)
+
+
+    def test_cosine_similarity_ranks_aligned_vectors(self):
+        self.assertAlmostEqual(cosine_similarity([1, 0], [1, 0]), 1.0)
+        self.assertAlmostEqual(cosine_similarity([1, 0], [0, 1]), 0.0)
+
+    def test_cosine_similarity_rejects_dimension_mismatch(self):
+        with self.assertRaises(ValueError):
+            cosine_similarity([1, 0], [1])
+
+    @patch("rag_embeddings.urllib.request.urlopen")
+    def test_openai_embedding_response_is_parsed(self, mocked_urlopen):
+        response = unittest.mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps({
+            "data": [
+                {"index": 1, "embedding": [0.0, 1.0]},
+                {"index": 0, "embedding": [1.0, 0.0]},
+            ]
+        }).encode("utf-8")
+        mocked_urlopen.return_value = response
+        vectors = embed_texts("OpenAI", "test-key", ["first", "second"])
+        self.assertEqual(vectors, [[1.0, 0.0], [0.0, 1.0]])
+
+    @patch("rag_embeddings.urllib.request.urlopen")
+    def test_gemini_embedding_response_is_parsed(self, mocked_urlopen):
+        response = unittest.mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps({
+            "embeddings": [{"values": [0.25, 0.75]}]
+        }).encode("utf-8")
+        mocked_urlopen.return_value = response
+        self.assertEqual(embed_texts("Gemini", "test-key", ["query"]), [[0.25, 0.75]])
+
+    def test_semantic_retrieval_ranks_matching_document_first(self):
+        _EMBEDDING_CACHE.clear()
+        def fake_embed(provider, api_key, texts):
+            if len(texts) == len(KNOWLEDGE_DOCUMENTS):
+                return [
+                    [1.0, 0.0] if "Potato late blight" in text
+                    else [0.0, 1.0]
+                    for text in texts
+                ]
+            return [[1.0, 0.0]]
+        with patch("rag_embeddings.embed_texts", side_effect=fake_embed):
+            results = retrieve_knowledge(
+                "Potato late blight", top_k=3, provider="OpenAI", api_key="test-key"
+            )
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-POTATO-LATE-01")
+        self.assertEqual(results[0]["retrieval_method"], "semantic")
+        _EMBEDDING_CACHE.clear()
+
+    def test_semantic_failure_uses_marked_lexical_fallback(self):
+        with patch("rag_embeddings.embed_texts", side_effect=RuntimeError("offline")):
+            results = retrieve_knowledge(
+                "Apple scab", top_k=1, provider="OpenAI", api_key="test-key"
+            )
+        self.assertEqual(results[0]["id"], "PV-APPLE-SCAB-01")
+        self.assertEqual(results[0]["retrieval_method"], "lexical_fallback")
 
 
 if __name__ == "__main__":
