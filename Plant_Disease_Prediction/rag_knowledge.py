@@ -11,6 +11,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-GENERAL-01",
         "title": "General plant disease prevention",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Preventing plant diseases in the garden",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "General prevention: inspect plants regularly; avoid moving from infected "
             "plants to healthy plants without cleaning hands and tools; remove diseased "
@@ -25,6 +28,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-FUNGAL-01",
         "title": "General fungal leaf disease management",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Preventing plant diseases in the garden",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "For suspected fungal leaf diseases, check whether spots expand, whether lesions "
             "have distinctive margins or growth, and whether symptoms appear on new leaves. "
@@ -38,6 +44,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-BACTERIAL-01",
         "title": "General bacterial plant disease precautions",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Preventing plant diseases in the garden",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "For suspected bacterial plant disease, avoid handling wet plants, clean tools "
             "between plants, use clean planting material, reduce splashing water where "
@@ -50,6 +59,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-VIRAL-01",
         "title": "General viral plant disease precautions",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Preventing plant diseases in the garden",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "For suspected viral disease, inspect for mosaic patterns, curling, distortion, "
             "or stunting, but these signs are not definitive. Control insect vectors only "
@@ -63,6 +75,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-POTATO-EARLY-01",
         "title": "Potato early blight: cautious field checks",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Potato leaf spots: early blight and late blight",
+        "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/vegetable/potato/leavesspots.html",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "Potato early blight is commonly associated with brown leaf lesions that may "
             "show concentric rings, often on older leaves. Similar symptoms can have other "
@@ -76,6 +91,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-POTATO-LATE-01",
         "title": "Potato late blight: urgent escalation",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Potato leaf spots: early blight and late blight",
+        "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/vegetable/potato/leavesspots.html",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "Potato late blight can progress rapidly in favorable cool, wet conditions and "
             "may cause water-soaked lesions that turn brown or dark, sometimes with pale "
@@ -90,6 +108,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-APPLE-SCAB-01",
         "title": "Apple scab: cautious field checks",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Apple scab of apples and crabapples",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/apple-scab",
+        "source_publisher": "University of Minnesota Extension",
         "text": (
             "Apple scab can cause olive-green to dark scabby lesions on leaves and fruit; "
             "leaf symptoms and fruit marks vary with stage and conditions. Similar marks "
@@ -103,6 +124,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-CORN-RUST-01",
         "title": "Corn common rust: cautious field checks",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Not every spot is the same: identifying corn leaf diseases",
+        "source_url": "https://extension.psu.edu/not-every-spot-is-the-same-identifying-corn-leaf-diseases",
+        "source_publisher": "Penn State Extension",
         "text": (
             "Corn common rust may produce raised rust-colored pustules on leaf surfaces. "
             "Other leaf diseases can resemble rust. Monitor spread across leaves, record "
@@ -115,6 +139,9 @@ KNOWLEDGE_DOCUMENTS = [
         "id": "PV-TOMATO-LEAF-01",
         "title": "Tomato leaf spot and blight: general checks",
         "source": "PlantVision curated baseline guidance",
+        "source_title": "Tomato pest management guidelines",
+        "source_url": "https://ipm.ucanr.edu/agriculture/tomato/",
+        "source_publisher": "UC Statewide IPM Program",
         "text": (
             "Tomato leaf spots and blights have overlapping visual symptoms. Check the "
             "location and pattern of lesions, lower versus upper leaves, stems and fruit, "
@@ -122,6 +149,188 @@ KNOWLEDGE_DOCUMENTS = [
             "maintain airflow, sanitize tools, avoid working among wet plants, and manage "
             "plant debris according to local recommendations. Confirm the likely cause "
             "before selecting disease-specific treatment."
+        ),
+    },,
+
+    {
+        "id": "PV-APPLE-BLACK-ROT-01",
+        "title": "Apple black rot: symptoms and field checks",
+        "source": "University of Minnesota Extension",
+        "source_title": "Apple leaves: spots and blotches",
+        "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/fruit/apple/leavesspots.html",
+        "source_publisher": "University of Minnesota Extension",
+        "text": (
+            "Apple black rot may cause round leaf spots with purple borders and tan centers. "
+            "Fruit may develop larger brown spots with rings, remain firm while rotting, or "
+            "become mummified on the tree. Branch cankers may also occur. These signs can "
+            "overlap with other problems; confirm the diagnosis before choosing treatment. "
+            "Consult local extension guidance for sanitation and pruning recommendations."
+        ),
+    },
+    {
+        "id": "PV-APPLE-CEDAR-RUST-01",
+        "title": "Apple cedar rust: symptoms and field checks",
+        "source": "University of Minnesota Extension",
+        "source_title": "Apple leaves: spots and blotches",
+        "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/fruit/apple/leavesspots.html",
+        "source_publisher": "University of Minnesota Extension",
+        "text": (
+            "Cedar-apple rust can cause yellow spots that become bright orange and develop "
+            "a red border. Small dark structures may appear on leaf surfaces, and fruit can "
+            "develop rough green-to-brown marks. Similar symptoms have other causes; use "
+            "the plant and nearby host context and seek local expert confirmation before "
+            "taking disease-specific action."
+        ),
+    },
+    {
+        "id": "PV-GRAPE-BLACK-ROT-01",
+        "title": "Grape black rot: symptoms and sanitation",
+        "source": "Penn State Extension",
+        "source_title": "Grape disease: black rot",
+        "source_url": "https://extension.psu.edu/grape-disease-black-rot",
+        "source_publisher": "Penn State Extension",
+        "text": (
+            "Grape black rot may cause leaf spots and fruit that shrivels into hard, black "
+            "mummies. The fungus can survive in mummified fruit and cane lesions, and wet "
+            "conditions can support infection. Extension guidance recommends removing "
+            "infected prunings and mummified berries before new growth where appropriate. "
+            "Local climate, cultivar, and production system affect management decisions."
+        ),
+    },
+    {
+        "id": "PV-CITRUS-HLB-01",
+        "title": "Citrus greening (HLB): warning signs",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Asian citrus psyllid and huanglongbing disease",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/asian-citrus-psyllid-and-huanglongbing-disease/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Huanglongbing, also called citrus greening, can cause uneven blotchy yellow "
+            "mottling on leaves, small or lopsided fruit, premature fruit drop, and twig "
+            "dieback. Nutrient deficiencies and other problems can also yellow leaves. "
+            "A leaf-image prediction cannot confirm HLB; contact a local plant-health "
+            "authority or agricultural extension service for appropriate testing and advice."
+        ),
+    },
+    {
+        "id": "PV-PEPPER-BACTERIAL-SPOT-01",
+        "title": "Pepper bacterial spot: symptoms and prevention",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Bacterial spot on peppers",
+        "source_url": "https://ipm.ucanr.edu/agriculture/peppers/bacterial-spot/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Pepper bacterial spot may cause small, initially water-soaked angular leaf "
+            "spots that later turn brown, raised stem lesions, and rough raised fruit spots. "
+            "The pathogen can be seedborne and spread on transplants; moisture favors "
+            "disease development. Use clean, pathogen-tested seed or healthy transplants, "
+            "avoid prolonged leaf wetness where practical, and follow locally applicable "
+            "extension guidance. Do not select a chemical treatment from an image alone."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-BACTERIAL-SPOT-01",
+        "title": "Tomato bacterial spot: symptoms and prevention",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Bacterial spot on tomato",
+        "source_url": "https://ipm.ucanr.edu/agriculture/tomato/bacterial-spot/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Tomato bacterial spot may cause water-soaked areas on older leaves that turn "
+            "dark brown or black. Fruit can develop slightly sunken spots that later become "
+            "brown and scabby. The pathogen can be seedborne and survive in crop debris or "
+            "alternate hosts. Use clean seed and transplants, reduce splashing water where "
+            "practical, and confirm the diagnosis before choosing treatment."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-EARLY-BLIGHT-01",
+        "title": "Tomato early blight: symptoms and prevention",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Early blight on tomatoes",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/early-blight-on-tomatoes/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Tomato early blight may cause brown or black spots with concentric rings, "
+            "often beginning on older leaves; stems and fruit can also be affected. Leaf "
+            "wetness favors infection. Avoid overhead irrigation where practical, maintain "
+            "airflow, and rotate crops when suitable for the growing system. Confirm the "
+            "cause of spots before disease-specific treatment."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-LATE-BLIGHT-01",
+        "title": "Tomato late blight: rapid-spread warning signs",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Late blight on tomato",
+        "source_url": "https://ipm.ucanr.edu/agriculture/tomato/late-blight/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Tomato late blight may cause water-soaked leaf areas that rapidly enlarge into "
+            "dark purple-brown blotches. Pale growth may appear near lesions in humid "
+            "conditions, and stems or fruit may be affected. The disease can spread rapidly "
+            "under favorable conditions. If rapid spread is suspected, limit movement of "
+            "plant material and contact local agricultural extension promptly."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-TYLCV-01",
+        "title": "Tomato yellow leaf curl virus: warning signs",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Tomato yellow leaf curl",
+        "source_url": "https://ipm.ucanr.edu/agriculture/tomato/tomato-yellow-leaf-curl/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Tomato yellow leaf curl virus may cause upward-curling, crumpled leaves with "
+            "yellowing between or along veins, shortened internodes, and stunted upright "
+            "growth. Whiteflies can transmit the virus. Similar symptoms can have other "
+            "causes; do not treat a classifier output as confirmation. Seek local expert "
+            "advice about testing, resistant varieties, and vector management."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-MOSAIC-01",
+        "title": "Tomato mosaic virus: symptoms and caution",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Plant diseases: virus symptoms you may see on tomato",
+        "source_url": "https://ipm.ucanr.edu/agriculture/tomato/diseases-virus-symptoms-you-may-see/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Tomato mosaic virus symptoms vary by cultivar and virus strain. Mosaic "
+            "coloring and leaf malformation can occur, but visual symptoms overlap with "
+            "other viral, pest, and nutrient problems. Use clean planting material, clean "
+            "tools where relevant, and seek local diagnostic advice before removing plants "
+            "or selecting a treatment."
+        ),
+    },
+    {
+        "id": "PV-SPIDER-MITES-01",
+        "title": "Spider mites: signs and nonchemical checks",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Spider mites",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/spider-mites/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Spider mites may cause fine pale stippling, bronzing, yellowing, leaf drop, "
+            "and sometimes webbing. Check leaf undersides with a hand lens because mites "
+            "are tiny. Water-stressed plants and hot, dusty conditions can worsen damage. "
+            "Confirm mites are present before treating and protect beneficial predators; "
+            "follow local guidance for any control product."
+        ),
+    },
+    {
+        "id": "PV-SQUASH-POWDERY-01",
+        "title": "Squash powdery mildew: symptoms and prevention",
+        "source": "University of Minnesota Extension",
+        "source_title": "Powdery mildew of cucurbits",
+        "source_url": "https://extension.umn.edu/agriculture/specialty-crops/vegetable-farming/disease-management/powdery-mildew-of-cucurbits",
+        "source_publisher": "University of Minnesota Extension",
+        "text": (
+            "Cucurbit powdery mildew can begin as pale yellow spots and develop white-to-gray "
+            "powdery patches on leaf surfaces. Severe infection weakens vines and can lead "
+            "to premature fruit ripening. Use suitable spacing, improve air movement, "
+            "control weeds, and consider resistant varieties. Confirm the disease before "
+            "using a disease-specific treatment."
         ),
     },
 ]
@@ -186,7 +395,7 @@ def retrieve_knowledge(query, top_k=3):
         if len(query_tokens) == 1:
             if not title_matches:
                 continue
-        elif len(matches) < 2:
+        elif len(matches) < 2 or (len(matches) / len(query_tokens)) < 0.7:
             continue
 
         # Title matches are more discriminative than mentions in generic body text.
