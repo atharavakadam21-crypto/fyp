@@ -548,9 +548,9 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     import json as _json
     import urllib.request
     import urllib.error
-    retrieved_docs = retrieve_knowledge(f"{plant} {disease} symptoms prevention treatment", top_k=3)
-    retrieved_context = "\\n\\n".join(
-        f"[{doc['id']}] {doc['title']} (source: {doc['source']})\\n{doc['text']}"
+    retrieved_docs = retrieve_knowledge(f"{plant} {disease}", top_k=3)
+    retrieved_context = "\n\n".join(
+        f"[{doc['id']}] {doc['title']} (source: {doc['source']})\n{doc['text']}"
         for doc in retrieved_docs
     ) or "No relevant local knowledge-base passages were retrieved."
     prompt = f"""You are PlantVision AI's plant-health education assistant.
@@ -691,7 +691,7 @@ def ai_plant_health_assistant(label, confidence):
                     "provider": provider,
                     "label": label,
                     "report": report,
-                    "sources": retrieve_knowledge(f"{plant} {disease} symptoms prevention treatment", top_k=3),
+                    "sources": retrieve_knowledge(f"{plant} {disease}", top_k=3),
                 }
             except Exception as error:
                 st.session_state.pop("plant_health_guidance", None)
