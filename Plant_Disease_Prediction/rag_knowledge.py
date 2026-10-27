@@ -349,6 +349,129 @@ KNOWLEDGE_DOCUMENTS = [
             "suspected northern leaf blight."
         ),
     },
+
+    {
+        "id": "PV-CHERRY-POWDERY-01",
+        "title": "Cherry powdery mildew: symptoms and prevention",
+        "source": "Pacific Northwest Plant Disease Management Handbook",
+        "source_title": "Cherry (Prunus spp.) — powdery mildew",
+        "source_url": "https://pnwhandbooks.org/plantdisease/host-disease/cherry-prunus-spp-powdery-mildew",
+        "source_publisher": "Pacific Northwest Plant Disease Management Handbook",
+        "text": (
+            "Cherry powdery mildew may begin as light-green circular lesions on young leaves, "
+            "with subtle white cotton-like growth. Severe infection can curl or blister leaves, "
+            "and fruit may develop depressed areas or white growth. Dense foliage, warm "
+            "temperatures, and high humidity can favor disease. Promote air circulation, avoid "
+            "wetting leaves where practical, and seek local orchard guidance before treatment."
+        ),
+    },
+    {
+        "id": "PV-GRAPE-ESCA-01",
+        "title": "Grape Esca (Black Measles): signs and cautions",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Esca (Black Measles) on grape",
+        "source_url": "https://ipm.ucanr.edu/agriculture/grape/esca-black-measles/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Esca, also called black measles, is a grapevine trunk disease. Leaf symptoms can "
+            "include interveinal striping that becomes dry and necrotic; berries may develop "
+            "small dark spots with brown-purple rings. Symptoms vary between years and can "
+            "resemble other grapevine problems. Suspected trunk disease needs vineyard-level "
+            "assessment; fungicide cannot eradicate an established wood infection."
+        ),
+    },
+    {
+        "id": "PV-GRAPE-LEAF-BLIGHT-01",
+        "title": "Grape leaf blight (Isariopsis leaf spot): field signs",
+        "source": "NC State Extension",
+        "source_title": "North Carolina Winegrape Growers Guide — Pest Management",
+        "source_url": "https://content.ces.ncsu.edu/north-carolina-winegrape-growers-guide/chapter-8-pest-management",
+        "source_publisher": "North Carolina State University Extension",
+        "text": (
+            "Grape leaf blight, also called Isariopsis leaf spot, is associated with "
+            "Pseudocercospora vitis. Lesions may begin as irregular dull-red or brown spots "
+            "and become black and brittle as they age, often later in the season. Other grape "
+            "leaf spots can look similar. Promote air circulation and consult local grape "
+            "extension guidance for diagnosis and region-appropriate management."
+        ),
+    },
+    {
+        "id": "PV-PEACH-BACTERIAL-SPOT-01",
+        "title": "Peach bacterial spot: symptoms and caution",
+        "source": "Penn State Extension",
+        "source_title": "2026 disease update: bacterial spot of peach and other stone fruit",
+        "source_url": "https://extension.psu.edu/2026-disease-update-bitter-rot-and-summer-disease-season",
+        "source_publisher": "Penn State Extension",
+        "text": (
+            "Bacterial spot can affect peach and other stone fruit. Leaf symptoms may include "
+            "water-soaked lesions that become brown and may leave small holes; fruit can develop "
+            "sunken spots. Symptoms vary with cultivar and weather and can resemble other "
+            "problems. Confirm the cause with a local fruit-tree specialist and follow current "
+            "regional guidance; do not choose a pesticide from an image prediction alone."
+        ),
+    },
+    {
+        "id": "PV-STRAWBERRY-LEAF-SCORCH-01",
+        "title": "Strawberry leaf scorch: symptoms and prevention",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Leaf scorch of strawberries",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/leaf-scorch-of-strawberries/",
+        "source_publisher": "UC Statewide IPM Program",
+        "text": (
+            "Strawberry leaf scorch may cause brown-to-purple spots with indistinct borders. "
+            "As disease increases, tissue between lesions may redden or turn purple, then leaves "
+            "dry and curl at the margins. Common leaf spot and other diseases can look similar. "
+            "Reduce crowding, improve airflow, remove infected debris where appropriate, and "
+            "use drip or furrow irrigation where practical to keep foliage drier."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-LEAF-MOLD-01",
+        "title": "Tomato leaf mold: symptoms and prevention",
+        "source": "University of Minnesota Extension",
+        "source_title": "Tomato leaf mold",
+        "source_url": "https://extension.umn.edu/agriculture/specialty-crops/vegetable-farming/disease-management/tomato-leaf-mold",
+        "source_publisher": "University of Minnesota Extension",
+        "text": (
+            "Tomato leaf mold often affects older leaves first, with pale yellow spots on the "
+            "upper surface and olive-green to brown velvety growth on the underside. High "
+            "relative humidity, especially in greenhouses and high tunnels, favors the disease. "
+            "Improve ventilation and airflow, avoid excessive canopy density, remove infected "
+            "plant debris, and consider resistant cultivars. Confirm the diagnosis before "
+            "selecting disease-specific treatment."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-SEPTORIA-01",
+        "title": "Tomato Septoria leaf spot: symptoms and prevention",
+        "source": "University of Maryland Extension",
+        "source_title": "Septoria leaf spot of tomatoes",
+        "source_url": "https://www.extension.umd.edu/resource/septoria-leaf-spot-tomatoes",
+        "source_publisher": "University of Maryland Extension",
+        "text": (
+            "Tomato Septoria leaf spot often starts on lower leaves as small circular gray "
+            "lesions with dark borders; tiny black fungal structures may be visible inside "
+            "spots. Wet weather and splashing water favor spread. Increase spacing and airflow, "
+            "water near the soil rather than wetting foliage, mulch to reduce soil splash, and "
+            "remove affected leaves where appropriate. Similar leaf spots need confirmation."
+        ),
+    },
+    {
+        "id": "PV-TOMATO-TARGET-SPOT-01",
+        "title": "Tomato target spot: symptoms and prevention",
+        "source": "University of Florida IFAS Extension",
+        "source_title": "Target spot of tomato in Florida",
+        "source_url": "https://ask.ifas.ufl.edu/publication/PP351",
+        "source_publisher": "University of Florida IFAS Extension",
+        "text": (
+            "Tomato target spot can cause dark-brown pinpoint leaf lesions that enlarge, "
+            "develop lighter centers and concentric dark rings, and sometimes have yellowing "
+            "around them. Fruit lesions may become sunken and deeply pitted. It can resemble "
+            "early blight or bacterial spot, and prolonged leaf wetness favors infection. "
+            "Use clean transplants, manage weeds and plant debris, and consult local extension "
+            "guidance before selecting treatment."
+        ),
+    },
 ]
 
 _STOPWORDS = {
