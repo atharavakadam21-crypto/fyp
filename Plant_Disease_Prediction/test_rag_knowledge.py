@@ -34,8 +34,10 @@ class RetrievalKnowledgeTests(unittest.TestCase):
     def test_generic_query_returns_no_results(self):
         self.assertEqual(retrieve_knowledge("plant disease symptoms prevention treatment"), [])
 
-    def test_uncovered_disease_returns_no_results(self):
-        self.assertEqual(retrieve_knowledge("grape black rot"), [])
+    def test_newly_covered_disease_retrieves_specific_passage(self):
+        results = retrieve_knowledge("grape black rot", top_k=3)
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-GRAPE-BLACK-ROT-01")
 
     def test_unrelated_query_returns_no_results(self):
         self.assertEqual(retrieve_knowledge("quantum physics orbital velocity"), [])
