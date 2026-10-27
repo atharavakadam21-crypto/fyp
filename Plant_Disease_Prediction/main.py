@@ -509,26 +509,46 @@ CLASS_NAMES = [
 # =========================================================
 
 @st.cache_resource
-
 def load_model():
+    """Load the trained CNN once and verify its inference contract."""
+    if not os.path.isfile(MODEL_PATH):
+        raise FileNotFoundError(
+            f"Trained CNN model not found at: {os.path.abspath(MODEL_PATH)}"
+        )
 
-    return tf.keras.models.load_model(
-        MODEL_PATH,
-        compile=False
-    )
+    loaded_model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    input_shape = loaded_model.input_shape
+    output_shape = loaded_model.output_shape
+
+    # This project preprocesses RGB leaves to 128x128 and predicts 38 classes.
+    if isinstance(input_shape, list) or len(input_shape) != 4:
+        raise ValueError(f"Expected a single image input, got {input_shape!r}")
+    if tuple(input_shape[1:]) != (128, 128, 3):
+        raise ValueError(
+            f"Model expects input shape {input_shape}; PlantVision preprocessing "
+            "currently supplies (None, 128, 128, 3)."
+        )
+    if isinstance(output_shape, list) or len(output_shape) != 2:
+        raise ValueError(f"Expected one 38-class output tensor, got {output_shape!r}")
+    if output_shape[-1] != len(CLASS_NAMES):
+        raise ValueError(
+            f"Model outputs {output_shape[-1]} classes, but CLASS_NAMES contains "
+            f"{len(CLASS_NAMES)} labels. Refusing to show mismatched predictions."
+        )
+    return loaded_model
 
 
 model = None
+MODEL_LOAD_ERROR = None
 
 try:
-
     model = load_model()
-
 except Exception as error:
-
+    MODEL_LOAD_ERROR = str(error)
     st.error(
-        "Model could not be loaded. Ensure trained_plant_disease_model.keras "
-        f"exists beside main.py. Details: {error}"
+        "The trained CNN could not be loaded or does not match the expected "
+        f"PlantVision input/output contract. No simulated predictions will be used. "
+        f"Details: {MODEL_LOAD_ERROR}"
     )
 
 
@@ -582,18 +602,35 @@ def preprocess_image(image):
 
 
 def predict_image(image):
-
+    """Return validated probabilities from the real trained CNN only."""
     if model is None:
-        raise RuntimeError("The trained model is not available.")
+        reason = MODEL_LOAD_ERROR or "model loading failed"
+        raise RuntimeError(
+            f"Trained CNN is unavailable ({reason}). Check MODEL_PATH and model files."
+        )
 
     input_array = preprocess_image(image)
-    probabilities = model.predict(
-        input_array,
-        verbose=0
-    )[0]
+    outputs = np.asarray(model.predict(input_array, verbose=0))
+    if outputs.ndim != 2 or outputs.shape[0] != 1:
+        raise RuntimeError(
+            f"Unexpected model prediction shape {outputs.shape}; expected (1, 38)."
+        )
+
+    probabilities = outputs[0].astype(np.float64)
+    if probabilities.shape[0] != len(CLASS_NAMES):
+        raise RuntimeError(
+            f"Model returned {probabilities.shape[0]} scores for "
+            f"{len(CLASS_NAMES)} configured classes."
+        )
+    if not np.isfinite(probabilities).all():
+        raise RuntimeError("Model returned NaN or infinite prediction scores.")
+    if np.any(probabilities < 0) or np.any(probabilities > 1):
+        raise RuntimeError(
+            "Model outputs are not probabilities in [0, 1]; verify the final "
+            "classification layer before displaying confidence."
+        )
 
     indices = np.argsort(probabilities)[::-1][:3]
-
     return probabilities, indices
 
 
@@ -721,9 +758,9 @@ def dashboard():
 
     metrics = [
         ("🌿", "38", "SUPPORTED CLASSES"),
-        ("🧠", "7.84M", "MODEL PARAMETERS"),
+        ("🧠", f"{model.count_params() / 1_000_000:.2f}M" if model is not None else "Unavailable", "MODEL PARAMETERS"),
         ("🖼️", "128×128", "INPUT RESOLUTION"),
-        ("⚡", "CNN", "ARCHITECTURE")
+        ("⚡", "CNN" if model is not None else "Offline", "ARCHITECTURE")
     ]
 
     for column, data in zip(columns, metrics):
