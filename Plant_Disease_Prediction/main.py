@@ -99,360 +99,139 @@ def render_html(content):
 # =========================================================
 
 def inject_css():
-
+    """Apply the full PlantVision botanical-luxury interface theme."""
     background_image = ""
-
     if os.path.exists(BACKGROUND_PATH):
-
         try:
-
-            with open(
-                BACKGROUND_PATH,
-                "rb"
-            ) as file:
-
-                encoded = base64.b64encode(
-                    file.read()
-                ).decode()
-
-            background_image = (
-                "url('data:image/jpeg;base64,"
-                + encoded
-                + "')"
-            )
-
+            with open(BACKGROUND_PATH, "rb") as file:
+                encoded = base64.b64encode(file.read()).decode()
+            background_image = "url('data:image/jpeg;base64," + encoded + "')"
         except Exception:
-
             background_image = ""
 
-    if background_image:
-
-        app_background = f"""
+    app_background = f"""
         background-image:
-            linear-gradient(
-                rgba(2, 16, 11, 0.92),
-                rgba(2, 25, 17, 0.96)
-            ),
-            {background_image};
-        """
-
-    else:
-
-        app_background = """
-        background:
-            linear-gradient(
-                135deg,
-                #02130b,
-                #06291b
-            );
-        """
+            radial-gradient(circle at 12% 8%, rgba(86,227,159,.13), transparent 30%),
+            radial-gradient(circle at 88% 78%, rgba(46,213,115,.10), transparent 32%),
+            linear-gradient(135deg, rgba(3,17,12,.96), rgba(6,35,23,.94))
+            {", " + background_image if background_image else ""};
+    """
 
     css = f"""
     <style>
-
-    /* =====================================================
-       GLOBAL
-    ===================================================== */
-
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+    :root {{
+        --pv-bg:#04150e; --pv-panel:rgba(10,39,26,.76); --pv-panel2:rgba(15,53,35,.84);
+        --pv-mint:#68f0aa; --pv-green:#2ed573; --pv-text:#effff5; --pv-muted:#a2c2af;
+        --pv-border:rgba(104,240,170,.19); --pv-glow:0 18px 48px rgba(0,0,0,.25),0 0 24px rgba(104,240,170,.055);
+    }}
+    html {{ scroll-behavior:smooth; }}
     .stApp {{
         {app_background}
-
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        min-height: 100vh;
+        background-size:cover; background-position:center; background-attachment:fixed;
+        color:var(--pv-text); font-family:'DM Sans',sans-serif;
     }}
-
-    .stApp::before {{
-        content: "";
-        position: fixed;
-        inset: 0;
-
-        background:
-            radial-gradient(
-                circle at 10% 10%,
-                rgba(50,255,145,0.08),
-                transparent 30%
-            ),
-            radial-gradient(
-                circle at 90% 85%,
-                rgba(40,255,130,0.07),
-                transparent 30%
-            );
-
-        pointer-events: none;
-        z-index: 0;
+    [data-testid="stAppViewContainer"] {{ background:transparent; }}
+    .main .block-container {{ max-width:1460px; padding:2rem clamp(1rem,3vw,3rem) 4rem; }}
+    h1,h2,h3,h4,[data-testid="stMetricValue"] {{ font-family:'Manrope','DM Sans',sans-serif !important; letter-spacing:-.035em; }}
+    p,li,label {{ line-height:1.7; }}
+    .stMarkdown,.stButton,.stFileUploader,.stSelectbox,.stTextInput,.stSlider,.stDataFrame,.stMetric,.stExpander,.stAlert {{
+        animation:pv-rise .42s ease both;
     }}
+    @keyframes pv-rise {{ from {{ opacity:0; transform:translateY(9px); }} to {{ opacity:1; transform:translateY(0); }} }}
+    @keyframes pv-glow {{ 0%,100% {{ box-shadow:0 0 14px rgba(104,240,170,.10); }} 50% {{ box-shadow:0 0 27px rgba(104,240,170,.22); }} }}
+    ::selection {{ background:rgba(104,240,170,.28); color:white; }}
+    ::-webkit-scrollbar {{ width:9px; height:9px; }}
+    ::-webkit-scrollbar-track {{ background:#04150e; }}
+    ::-webkit-scrollbar-thumb {{ background:#1a5b3c; border:2px solid #04150e; border-radius:99px; }}
+    ::-webkit-scrollbar-thumb:hover {{ background:var(--pv-mint); }}
 
-    .main .block-container {{
-        max-width: 1450px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
+    /* Premium glass panels and visual hierarchy */
+    .hero,.hero-card {{
+        position:relative; overflow:hidden; padding:clamp(25px,4vw,48px);
+        border:1px solid var(--pv-border); border-radius:26px;
+        background:linear-gradient(125deg,rgba(17,66,42,.82),rgba(5,27,18,.76));
+        box-shadow:var(--pv-glow); backdrop-filter:blur(18px); margin-bottom:28px;
+        animation:pv-rise .5s ease both;
     }}
-
-    .stMarkdown,
-    .stButton,
-    .stFileUploader,
-    .stSelectbox,
-    .stTextInput,
-    .stSlider,
-    .stDataFrame,
-    .stMetric,
-    .stExpander,
-    .stAlert {{
-        position: relative;
-        z-index: 1;
+    .hero:after,.hero-card:after {{
+        content:""; position:absolute; width:290px; height:290px; right:-100px; top:-130px;
+        border-radius:50%; background:radial-gradient(circle,rgba(104,240,170,.18),transparent 68%); pointer-events:none;
     }}
+    .hero-title {{ color:#f4fff8; font-family:'Manrope',sans-serif; font-size:clamp(34px,5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-.055em; }}
+    .hero-title span {{ color:var(--pv-mint); text-shadow:0 0 28px rgba(104,240,170,.22); }}
+    .hero-eyebrow,.hero-tag {{ display:inline-flex; align-items:center; gap:8px; color:var(--pv-mint); font-size:11px; font-weight:800; letter-spacing:2.3px; text-transform:uppercase; margin-bottom:14px; }}
+    .hero-description,.hero-desc {{ color:#b4d1bf; max-width:820px; font-size:15px; line-height:1.85; margin-top:16px; }}
+    .pill,.pill-badge {{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; margin:5px 5px 0 0; border:1px solid rgba(104,240,170,.22); border-radius:999px; background:rgba(104,240,170,.08); color:#c9ffdc; font-size:11px; font-weight:700; transition:all .2s ease; }}
+    .pill:hover,.pill-badge:hover {{ transform:translateY(-2px); border-color:var(--pv-mint); background:rgba(104,240,170,.15); }}
+    .metric-card,.metric-grid-card {{ min-height:128px; padding:21px 23px; border:1px solid var(--pv-border); border-radius:19px; background:linear-gradient(145deg,rgba(13,49,32,.88),rgba(6,28,19,.86)); box-shadow:0 12px 32px rgba(0,0,0,.14); transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease; }}
+    .metric-card:hover,.metric-grid-card:hover {{ transform:translateY(-4px); border-color:rgba(104,240,170,.48); box-shadow:var(--pv-glow); }}
+    .metric-icon {{ font-size:25px; margin-bottom:10px; }}
+    .metric-number,.metric-val {{ color:#f1fff6; font-family:'Manrope',sans-serif; font-size:clamp(25px,2.4vw,34px); font-weight:800; letter-spacing:-.04em; }}
+    .metric-label,.metric-header {{ color:#83a994; font-size:10px; font-weight:800; letter-spacing:1.6px; text-transform:uppercase; }}
+    .metric-sub {{ color:var(--pv-mint); font-size:12px; margin-top:7px; }}
+    .glass-card,.result-card,.upload-card {{ border:1px solid var(--pv-border); border-radius:20px; background:linear-gradient(145deg,rgba(11,43,29,.84),rgba(5,25,17,.83)); padding:clamp(18px,2.4vw,28px); margin-bottom:20px; box-shadow:0 12px 35px rgba(0,0,0,.12); backdrop-filter:blur(14px); transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease; }}
+    .glass-card:hover,.result-card:hover {{ border-color:rgba(104,240,170,.32); box-shadow:var(--pv-glow); }}
+    .result-card {{ background:linear-gradient(135deg,rgba(18,76,47,.86),rgba(5,29,19,.92)); }}
+    .upload-card {{ text-align:center; border-style:dashed; padding:38px 24px; }}
+    .upload-icon {{ font-size:42px; margin-bottom:12px; }}
+    .upload-title {{ color:#eafff1; font-size:21px; font-weight:800; }}
+    .upload-subtitle {{ color:#91b6a0; font-size:13px; line-height:1.8; margin-top:8px; }}
+    .section-title {{ color:#f0fff5; font-family:'Manrope',sans-serif; font-size:clamp(19px,2vw,24px); font-weight:800; letter-spacing:-.035em; margin:30px 0 16px; }}
+    .section-title:before {{ content:""; display:inline-block; width:4px; height:22px; vertical-align:-4px; margin-right:10px; border-radius:9px; background:var(--pv-mint); box-shadow:0 0 12px rgba(104,240,170,.55); }}
+    .info-row,.data-row {{ display:flex; justify-content:space-between; align-items:flex-start; gap:18px; padding:13px 0; border-bottom:1px solid rgba(104,240,170,.09); }}
+    .info-row:last-child,.data-row:last-child {{ border-bottom:none; }}
+    .info-label,.data-label {{ color:var(--pv-mint); font-size:10px; font-weight:800; letter-spacing:1.3px; }}
+    .info-value,.data-value {{ color:#c0d8ca; font-size:13px; text-align:right; overflow-wrap:anywhere; }}
+    .status-badge,.diagnosis-status {{ display:inline-flex; border:1px solid rgba(104,240,170,.3); background:rgba(104,240,170,.1); color:var(--pv-mint); border-radius:999px; padding:7px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; }}
+    .result-label {{ color:#8db79c; font-size:10px; font-weight:800; letter-spacing:2px; }}
+    .result-plant {{ color:#c8f0d6; font-size:24px; font-weight:800; }}
+    .result-disease {{ color:#f2fff6; font-size:clamp(23px,3vw,32px); font-weight:800; }}
+    .result-confidence {{ color:var(--pv-mint); font-size:clamp(30px,4vw,44px); font-weight:800; }}
+    .footer,.sidebar-footer {{ color:#759984; font-size:11px; text-align:center; line-height:1.9; padding:22px 0; }}
 
-    /* =====================================================
-       BRANDING
-    ===================================================== */
+    /* Sidebar: branded, clear, and visibly interactive */
+    [data-testid="stSidebar"] {{ background:linear-gradient(180deg,rgba(3,19,12,.98),rgba(5,31,20,.98)) !important; border-right:1px solid var(--pv-border); }}
+    [data-testid="stSidebar"] > div:first-child {{ background:transparent; }}
+    [data-testid="stSidebar"] .block-container {{ padding:1.7rem 1rem 2rem; }}
+    .brand {{ color:var(--pv-mint); font-family:'Manrope',sans-serif; font-size:26px; font-weight:800; letter-spacing:-1.1px; }}
+    .brand-sub {{ color:#83a994; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; margin:4px 0 22px; }}
+    [data-testid="stSidebar"] [data-testid="stRadio"] > label {{ color:#9bbda8; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }}
+    [data-testid="stSidebar"] [role="radiogroup"] {{ gap:7px; }}
+    [data-testid="stSidebar"] [role="radiogroup"] label {{ border:1px solid rgba(104,240,170,.09); border-radius:12px; padding:9px 12px; background:rgba(10,39,26,.55); transition:all .2s ease; }}
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover {{ border-color:rgba(104,240,170,.42); background:rgba(18,62,40,.82); transform:translateX(3px); }}
+    .sidebar-model {{ padding:16px; border:1px solid var(--pv-border); border-radius:15px; background:rgba(10,39,26,.7); margin-top:20px; }}
+    .sidebar-model-title {{ color:#80a891; font-size:10px; letter-spacing:1.8px; font-weight:800; }}
+    .sidebar-model-value {{ color:#c8ffdc; font-size:13px; font-weight:800; margin-top:6px; }}
 
-    .brand {{
-        font-size: 28px;
-        font-weight: 900;
-        letter-spacing: -1px;
-        color: #72eaa5;
-        margin-bottom: 0;
+    /* Buttons, forms, uploaders, tables and expanders */
+    div.stButton > button {{ min-height:44px; border:1px solid rgba(104,240,170,.3) !important; border-radius:13px !important; color:#f2fff6 !important; background:linear-gradient(135deg,#1a6743,#0d3c28) !important; font-family:'Manrope',sans-serif !important; font-weight:800 !important; box-shadow:0 7px 20px rgba(0,0,0,.18); transition:all .2s ease !important; }}
+    div.stButton > button:hover {{ transform:translateY(-2px); border-color:var(--pv-mint) !important; box-shadow:0 10px 26px rgba(46,213,115,.2); }}
+    div.stButton > button:active {{ transform:scale(.985); }}
+    [data-testid="stFileUploader"] {{ padding:12px; border:1px dashed rgba(104,240,170,.35); border-radius:16px; background:rgba(9,38,25,.55); }}
+    [data-testid="stFileUploader"]:hover {{ border-color:var(--pv-mint); background:rgba(14,53,35,.72); }}
+    [data-baseweb="select"] > div,[data-baseweb="input"] > div,[data-baseweb="textarea"] {{ border-color:rgba(104,240,170,.22) !important; border-radius:11px !important; background:rgba(5,25,17,.75) !important; }}
+    [data-baseweb="popover"] {{ border:1px solid var(--pv-border); border-radius:14px; }}
+    [data-testid="stSlider"] [role="slider"] {{ background:var(--pv-mint) !important; border-color:var(--pv-mint) !important; }}
+    [data-testid="stExpander"] {{ border:1px solid var(--pv-border); border-radius:14px; background:rgba(8,34,22,.55); overflow:hidden; }}
+    [data-testid="stExpander"] summary:hover {{ color:var(--pv-mint); }}
+    [data-testid="stDataFrame"],[data-testid="stTable"] {{ border:1px solid var(--pv-border); border-radius:14px; overflow:hidden; }}
+    [data-testid="stAlert"] {{ border-radius:13px; }}
+    [data-testid="stMetric"] {{ background:rgba(10,39,26,.55); border:1px solid var(--pv-border); border-radius:15px; padding:14px 16px; }}
+    [data-testid="stMetricLabel"] {{ color:#9bbda8 !important; }}
+    [data-testid="stMetricValue"] {{ color:#effff5 !important; }}
+    hr {{ border-color:rgba(104,240,170,.12) !important; }}
+    @media (max-width: 760px) {{
+        .main .block-container {{ padding:1rem .8rem 2rem; }}
+        .hero,.hero-card {{ padding:24px 20px; border-radius:19px; }}
+        .hero-title {{ font-size:36px; }}
+        .glass-card,.result-card {{ padding:18px; }}
+        .info-row,.data-row {{ gap:10px; }}
+        .info-value,.data-value {{ max-width:58%; }}
     }}
-
-    .brand-sub {{
-        color: #8bb39c;
-        font-size: 12px;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-bottom: 25px;
-    }}
-
-    .hero {{
-        padding: 34px;
-        border: 1px solid rgba(114,234,165,0.16);
-        border-radius: 24px;
-        background: linear-gradient(
-            135deg,
-            rgba(15, 58, 38, 0.72),
-            rgba(3, 25, 17, 0.55)
-        );
-        box-shadow: 0 20px 60px rgba(0,0,0,0.22);
-        margin-bottom: 25px;
-    }}
-
-    .hero-eyebrow {{
-        color: #72eaa5;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 3px;
-        margin-bottom: 13px;
-    }}
-
-    .hero-title {{
-        color: #f1fff6;
-        font-size: clamp(34px, 5vw, 65px);
-        font-weight: 900;
-        line-height: 1;
-        letter-spacing: -2px;
-    }}
-
-    .hero-title span {{
-        color: #72eaa5;
-    }}
-
-    .hero-description {{
-        color: #a9c7b5;
-        font-size: 15px;
-        line-height: 1.8;
-        max-width: 750px;
-        margin-top: 20px;
-    }}
-
-    .pill {{
-        display: inline-block;
-        padding: 7px 12px;
-        margin: 4px 5px 0 0;
-        border-radius: 999px;
-        background: rgba(114,234,165,0.10);
-        border: 1px solid rgba(114,234,165,0.22);
-        color: #a9f5c6;
-        font-size: 11px;
-        font-weight: 800;
-    }}
-
-    .metric-card {{
-        background: rgba(9, 40, 27, 0.72);
-        border: 1px solid rgba(114,234,165,0.15);
-        border-radius: 18px;
-        padding: 20px;
-        min-height: 135px;
-    }}
-
-    .metric-icon {{
-        font-size: 24px;
-        margin-bottom: 10px;
-    }}
-
-    .metric-number {{
-        color: #eafff1;
-        font-size: 25px;
-        font-weight: 900;
-    }}
-
-    .metric-label {{
-        color: #789b88;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 1px;
-        margin-top: 5px;
-    }}
-
-    .glass-card,
-    .result-card,
-    .upload-card {{
-        background: rgba(8, 36, 24, 0.72);
-        border: 1px solid rgba(114,234,165,0.14);
-        border-radius: 20px;
-        padding: 25px;
-        margin-bottom: 20px;
-    }}
-
-    .result-card {{
-        background: linear-gradient(
-            135deg,
-            rgba(18, 76, 47, 0.75),
-            rgba(5, 31, 20, 0.82)
-        );
-    }}
-
-    .upload-card {{
-        text-align: center;
-        border-style: dashed;
-        padding: 35px;
-    }}
-
-    .upload-icon {{
-        font-size: 38px;
-        margin-bottom: 10px;
-    }}
-
-    .upload-title {{
-        color: #dfffea;
-        font-size: 21px;
-        font-weight: 800;
-    }}
-
-    .upload-subtitle {{
-        color: #789b88;
-        font-size: 12px;
-        line-height: 1.8;
-        margin-top: 8px;
-    }}
-
-    .section-title {{
-        color: #e5fff0;
-        font-size: 22px;
-        font-weight: 900;
-        margin: 28px 0 15px;
-    }}
-
-    .info-row {{
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 13px 0;
-        border-bottom: 1px solid rgba(114,234,165,0.09);
-    }}
-
-    .info-row:last-child {{
-        border-bottom: none;
-    }}
-
-    .info-label {{
-        color: #72eaa5;
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: 1px;
-    }}
-
-    .info-value {{
-        color: #b5cebf;
-        font-size: 13px;
-        text-align: right;
-    }}
-
-    .status-badge {{
-        display: inline-block;
-        border: 1px solid rgba(114,234,165,0.3);
-        background: rgba(114,234,165,0.10);
-        color: #72eaa5;
-        border-radius: 999px;
-        padding: 7px 12px;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: 1px;
-    }}
-
-    .result-label {{
-        color: #7fae91;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: 2px;
-    }}
-
-    .result-plant {{
-        color: #b7e8c8;
-        font-size: 24px;
-        font-weight: 800;
-    }}
-
-    .result-disease {{
-        color: #effff4;
-        font-size: 25px;
-        font-weight: 900;
-    }}
-
-    .result-confidence {{
-        color: #72eaa5;
-        font-size: 38px;
-        font-weight: 900;
-    }}
-
-    .footer,
-    .sidebar-footer {{
-        color: #527962;
-        font-size: 11px;
-        text-align: center;
-        line-height: 1.8;
-        padding: 25px 0;
-    }}
-
-    .sidebar-model {{
-        padding: 15px;
-        border: 1px solid rgba(114,234,165,0.13);
-        border-radius: 14px;
-        background: rgba(8,36,24,0.55);
-        margin-top: 18px;
-    }}
-
-    .sidebar-model-title {{
-        color: #6e987e;
-        font-size: 10px;
-        letter-spacing: 2px;
-        font-weight: 900;
-    }}
-
-    .sidebar-model-value {{
-        color: #b9f4cc;
-        font-size: 13px;
-        font-weight: 800;
-        margin-top: 5px;
-    }}
-
     </style>
     """
-
-    st.markdown(
-        css,
-        unsafe_allow_html=True
-    )
+    st.markdown(css, unsafe_allow_html=True)
 
 
 inject_css()
