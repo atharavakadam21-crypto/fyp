@@ -332,6 +332,23 @@ KNOWLEDGE_DOCUMENTS = [
             "using a disease-specific treatment."
         ),
     },
+
+    {
+        "id": "PV-CORN-LEAF-DISEASES-01",
+        "title": "Corn leaf diseases: gray leaf spot and northern leaf blight",
+        "source": "Penn State Extension",
+        "source_title": "Not every spot is the same: identifying corn leaf diseases",
+        "source_url": "https://extension.psu.edu/not-every-spot-is-the-same-identifying-corn-leaf-diseases",
+        "source_publisher": "Penn State Extension",
+        "text": (
+            "Corn gray leaf spot can begin as tan lesions with yellow halos and develop into "
+            "longer rectangular gray-to-tan lesions aligned with leaf veins. Corn leaf "
+            "diseases can resemble one another, and symptom appearance varies by hybrid and "
+            "conditions. Compare the full symptom pattern and seek local crop-adviser "
+            "confirmation before selecting disease-specific treatment, including for "
+            "suspected northern leaf blight."
+        ),
+    },
 ]
 
 _STOPWORDS = {
