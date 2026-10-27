@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import tensorflow as tf
+import matplotlib
 import matplotlib.cm as cm
 
 from PIL import Image
@@ -852,14 +853,24 @@ def generate_gradcam_details(image, class_index):
     if not candidates:
         raise RuntimeError("No top-level Conv2D layer is available for Grad-CAM.")
 
+    # Differentiate the pre-softmax class logit when the model exposes a
+    # final Dense(softmax) layer. Probabilities near 1.0 can saturate and
+    # produce weak/blank Grad-CAM maps even when the convolution is relevant.
+    softmax_head = next((
+        layer for layer in reversed(model.layers)
+        if isinstance(layer, tf.keras.layers.Dense)
+        and layer.activation == tf.keras.activations.softmax
+    ), None)
+
     grad_model = None
     target_layer = None
     last_error = None
     for candidate in candidates:
         try:
+            feature_outputs = [candidate.output, softmax_head.input if softmax_head is not None else model.output]
             grad_model = tf.keras.models.Model(
                 inputs=model.inputs,
-                outputs=[candidate.output, model.output],
+                outputs=feature_outputs,
             )
             # Force a forward pass to catch disconnected or incompatible layers.
             grad_model(tf.convert_to_tensor(preprocess_image(image)), training=False)
@@ -874,8 +885,17 @@ def generate_gradcam_details(image, class_index):
 
     input_tensor = tf.convert_to_tensor(preprocess_image(image))
     with tf.GradientTape() as tape:
-        activations, predictions = grad_model(input_tensor, training=False)
-        class_score = predictions[:, class_index]
+        activations, head_or_predictions = grad_model(input_tensor, training=False)
+        if softmax_head is not None:
+            class_logits = tf.linalg.matmul(head_or_predictions, softmax_head.kernel)
+            if softmax_head.use_bias:
+                class_logits = tf.nn.bias_add(class_logits, softmax_head.bias)
+            class_score = class_logits[:, class_index]
+        else:
+            # Generic fallback for models without a visible Dense-softmax head.
+            class_score = tf.math.log(tf.clip_by_value(
+                head_or_predictions[:, class_index], 1e-7, 1.0
+            ))
     gradients = tape.gradient(class_score, activations)
     if gradients is None:
         raise RuntimeError("Gradients are disconnected for the selected class.")
@@ -901,7 +921,7 @@ def generate_gradcam_details(image, class_index):
     ).resize(image.size, Image.Resampling.BILINEAR)
     heatmap_array = np.asarray(heatmap_image, dtype=np.float32) / 255.0
     colored = np.uint8(
-        np.clip(cm.get_cmap("jet")(heatmap_array)[..., :3], 0.0, 1.0) * 255
+        np.clip(matplotlib.colormaps["jet"](heatmap_array)[..., :3], 0.0, 1.0) * 255
     )
     original_image = image.convert("RGB")
     colored_heatmap = Image.fromarray(colored).convert("RGB")
