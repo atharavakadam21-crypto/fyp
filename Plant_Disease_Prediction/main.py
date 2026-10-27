@@ -15,6 +15,7 @@ import matplotlib.cm as cm
 from PIL import Image
 
 from rag_knowledge import retrieve_knowledge
+from rag_evaluation import validate_report
 
 
 # =========================================================
@@ -666,7 +667,11 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
             # Preserve the original response if the retry fails.
             pass
 
-    return {"report": result, "sources": retrieved_docs}
+    return {
+        "report": result,
+        "sources": retrieved_docs,
+        "quality_issues": validate_report(result, retrieved_docs),
+    }
 
 
 def ai_plant_health_assistant(label, confidence):
@@ -692,6 +697,7 @@ def ai_plant_health_assistant(label, confidence):
                     "label": label,
                     "report": guidance["report"],
                     "sources": guidance["sources"],
+                    "quality_issues": guidance["quality_issues"],
                 }
             except Exception as error:
                 st.session_state.pop("plant_health_guidance", None)
@@ -699,6 +705,13 @@ def ai_plant_health_assistant(label, confidence):
     saved = st.session_state.get("plant_health_guidance")
     if saved and saved.get("label") == label and saved.get("provider") == provider:
         st.markdown(saved["report"])
+        quality_issues = saved.get("quality_issues", [])
+        if quality_issues:
+            st.warning("Automated review found items to check:")
+            for issue in quality_issues:
+                st.write("- " + issue)
+        else:
+            st.caption("Automated structure and citation-ID checks passed. These checks do not independently prove every claim is factually supported.")
         with st.expander("📚 Retrieved knowledge used by the assistant"):
             sources = saved.get("sources", [])
             if sources:
