@@ -72,9 +72,10 @@ class RetrievalKnowledgeTests(unittest.TestCase):
                 self.assertTrue(results)
                 self.assertEqual(results[0]["id"], expected_id)
 
-    def test_similar_but_different_disease_is_not_misrepresented(self):
+    def test_esca_retrieves_esca_not_black_rot(self):
         results = retrieve_knowledge("Grape Esca Black Measles", top_k=3)
-        self.assertEqual(results, [])
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-GRAPE-ESCA-01")
 
     def test_every_document_has_source_metadata(self):
         for doc in KNOWLEDGE_DOCUMENTS:
