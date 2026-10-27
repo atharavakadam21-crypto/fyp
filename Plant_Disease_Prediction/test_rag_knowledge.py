@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from rag_embeddings import cosine_similarity, embed_texts
 from rag_knowledge import KNOWLEDGE_DOCUMENTS, _EMBEDDING_CACHE, retrieve_knowledge
+from rag_evaluation import REQUIRED_HEADINGS, validate_report
 
 
 class RetrievalKnowledgeTests(unittest.TestCase):
@@ -145,6 +146,43 @@ class RetrievalKnowledgeTests(unittest.TestCase):
             )
         self.assertEqual(results[0]["id"], "PV-APPLE-SCAB-01")
         self.assertEqual(results[0]["retrieval_method"], "lexical_fallback")
+
+
+    def test_valid_report_passes_structure_and_citation_checks(self):
+        report = "\n".join(
+            f"## {index}. {heading}\nHelpful guidance [PV-APPLE-SCAB-01]."
+            for index, heading in enumerate(REQUIRED_HEADINGS, start=1)
+        ) + "\nThis is not a confirmed diagnosis."
+        issues = validate_report(
+            report,
+            [{"id": "PV-APPLE-SCAB-01"}],
+        )
+        self.assertEqual(issues, [])
+
+    def test_missing_sections_are_reported(self):
+        issues = validate_report("## What the prediction means\nNot a diagnosis.", [])
+        self.assertTrue(any("Missing required report section" in issue for issue in issues))
+
+    def test_unknown_citation_id_is_reported(self):
+        report = "\n".join(f"## {heading}" for heading in REQUIRED_HEADINGS)
+        report += "\nThis is not a confirmed diagnosis. [PV-UNKNOWN-99]"
+        issues = validate_report(report, [{"id": "PV-APPLE-SCAB-01"}])
+        self.assertTrue(any("not retrieved" in issue for issue in issues))
+
+    def test_missing_citation_is_reported_when_evidence_was_retrieved(self):
+        report = "\n".join(f"## {heading}" for heading in REQUIRED_HEADINGS)
+        report += "\nThis is not a confirmed diagnosis."
+        issues = validate_report(report, [{"id": "PV-APPLE-SCAB-01"}])
+        self.assertTrue(any("no passage citations" in issue for issue in issues))
+
+    def test_pesticide_dosage_pattern_is_flagged(self):
+        report = "\n".join(f"## {heading}" for heading in REQUIRED_HEADINGS)
+        report += "\nThis is not a confirmed diagnosis. Mix spray with 5 ml per litre."
+        issues = validate_report(report, [])
+        self.assertTrue(any("dosage detected" in issue for issue in issues))
+
+    def test_empty_report_is_rejected(self):
+        self.assertEqual(validate_report(" ", []), ["The generated report is empty."])
 
 
 if __name__ == "__main__":
