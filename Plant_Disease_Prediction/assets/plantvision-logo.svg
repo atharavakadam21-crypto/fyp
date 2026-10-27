@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">PlantVision AI</title>
+  <desc id="desc">A mint green leaf emerging from a circular forest green badge.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#174d32"/>
+      <stop offset="1" stop-color="#061b11"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a4ffd0"/>
+      <stop offset="1" stop-color="#42d98b"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="60" fill="url(#bg)" stroke="#68f0aa" stroke-opacity=".55" stroke-width="2"/>
+  <path d="M96 25C65 25 37 35 30 59c-5 17 8 31 24 28 26-5 39-31 42-62Z" fill="url(#leaf)"/>
+  <path d="M28 103c13-26 30-43 55-61" fill="none" stroke="#d8ffe8" stroke-linecap="round" stroke-width="5"/>
+  <path d="M47 75c-2-12-8-20-18-25M61 61c12 0 22 4 29 12" fill="none" stroke="#1c7749" stroke-linecap="round" stroke-width="4"/>
+  <circle cx="96" cy="94" r="5" fill="#68f0aa" opacity=".9"/>
+</svg>
