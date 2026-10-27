@@ -81,16 +81,33 @@ def gradcam(model, image, class_index):
     if not candidates:
         raise RuntimeError("No convolutional layer is available for Grad-CAM.")
 
+    # If the classifier ends in Dense(softmax), differentiate the pre-softmax
+    # logit instead of its probability. This avoids saturated probabilities
+    # making a useful explanation look blank.
+    softmax_head = next((
+        layer for layer in reversed(model.layers)
+        if isinstance(layer, tf.keras.layers.Dense)
+        and layer.activation == tf.keras.activations.softmax
+    ), None)
     last_error = None
     for target in candidates:
         try:
-            grad_model = tf.keras.Model(model.inputs, [target.output, model.output])
+            outputs = [target.output, model.output]
+            if softmax_head is not None:
+                outputs = [target.output, softmax_head.input]
+            grad_model = tf.keras.Model(model.inputs, outputs)
             tensor = tf.convert_to_tensor(preprocess(image))
             with tf.GradientTape() as tape:
-                activations, predictions = grad_model(tensor, training=False)
-                # log(probability) is a safer generic target than raw probability;
-                # this model's preferred Dense-softmax head is handled by the app.
-                score = tf.math.log(tf.clip_by_value(predictions[:, class_index], 1e-7, 1.0))
+                activations, head_or_predictions = grad_model(tensor, training=False)
+                if softmax_head is not None:
+                    logits = tf.linalg.matmul(head_or_predictions, softmax_head.kernel)
+                    if softmax_head.use_bias:
+                        logits = tf.nn.bias_add(logits, softmax_head.bias)
+                    score = logits[:, class_index]
+                else:
+                    score = tf.math.log(tf.clip_by_value(
+                        head_or_predictions[:, class_index], 1e-7, 1.0
+                    ))
             gradients = tape.gradient(score, activations)
             if gradients is None:
                 raise RuntimeError(f"Gradients are disconnected at {target.name}.")
