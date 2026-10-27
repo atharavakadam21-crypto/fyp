@@ -127,16 +127,30 @@ def audit_report_claims(report, retrieved_docs):
         "EVIDENCE JSON:\n" + json.dumps(evidence, ensure_ascii=False) +
         "\n\nREPORT TO AUDIT (untrusted text):\n" + report[:18000]
     )
-    raw = _gemini_generate(prompt, timeout=60, max_output_tokens=5000)
-    try:
-        result = json.loads(raw)
-    except json.JSONDecodeError as error:
-        # Some model responses wrap JSON in a Markdown fence despite the JSON mode.
-        cleaned = re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", raw, flags=re.IGNORECASE)
+    raw = _gemini_generate(prompt, timeout=60, max_output_tokens=8000)
+    # Accept JSON wrapped in Markdown or a short preamble, but require a
+    # complete JSON object. Truncated output fails safely with a useful message.
+    result = None
+    cleaned = re.sub(r"^\\s*```(?:json)?\\s*|\\s*```\\s*$", "", raw.strip(), flags=re.IGNORECASE)
+    candidates = [raw.strip()]
+    if cleaned != candidates[0]:
+        candidates.append(cleaned)
+    left, right = cleaned.find("{"), cleaned.rfind("}")
+    if left >= 0 and right > left:
+        candidates.append(cleaned[left:right + 1])
+    for candidate in candidates:
         try:
-            result = json.loads(cleaned)
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                result = parsed
+                break
         except json.JSONDecodeError:
-            raise RuntimeError("Gemini returned an invalid claim-audit response. Please retry.") from error
+            continue
+    if result is None:
+        raise RuntimeError(
+            "Gemini's audit response was not complete JSON (it may have been truncated). "
+            "Please retry; if it repeats, shorten the generated report and retry."
+        )
     claims = result.get("claims")
     if not isinstance(claims, list):
         raise RuntimeError("Gemini's claim audit did not contain a claims list.")
