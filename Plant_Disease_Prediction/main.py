@@ -524,6 +524,102 @@ def save_real_world_test(
         ])
 
 
+
+
+# =========================================================
+# AI PLANT HEALTH ASSISTANT (OpenAI / Gemini)
+# =========================================================
+
+def get_secret_value(name):
+    """Read API keys from environment variables or Streamlit secrets."""
+    value = os.getenv(name, "").strip()
+    if value:
+        return value
+    try:
+        return str(st.secrets.get(name, "")).strip()
+    except Exception:
+        return ""
+
+
+def request_ai_guidance(provider, plant, disease, confidence, symptoms, management):
+    """Request cautious crop guidance from OpenAI or Gemini using Python's standard library."""
+    import json as _json
+    import urllib.request
+    import urllib.error
+    prompt = f"""You are PlantVision AI's plant-health education assistant.
+CNN prediction: crop={plant}; predicted condition={disease}; model confidence={confidence:.1%}.
+Existing app notes (possibly generic): symptoms={symptoms}; management={management}.
+Return concise Markdown with headings: What this prediction means; Signs to check; Prevention and care plan; When to contact an agricultural expert; Important cautions.
+Treat the result as a tentative prediction, not a confirmed diagnosis. Give low-risk practical steps first. Be crop/disease-specific only when reasonably supported; mention lookalike diseases and environmental causes. Do not prescribe pesticide brands, exact chemical dosages, or mixing instructions. Advise following local agricultural extension guidance and product labels. Keep language easy for growers."""
+    if provider == "OpenAI":
+        api_key = get_secret_value("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        endpoint = "https://api.openai.com/v1/chat/completions"
+        payload = {"model": model_name, "temperature": 0.3, "messages": [
+            {"role": "system", "content": "Provide cautious, evidence-aware plant health education. Never claim a classifier confirms disease."},
+            {"role": "user", "content": prompt}]}
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    else:
+        api_key = get_secret_value("GEMINI_API_KEY")
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        payload = {"systemInstruction": {"parts": [{"text": "Provide cautious plant health education; never claim a classifier confirms disease."}]},
+                   "contents": [{"parts": [{"text": prompt}]}],
+                   "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1200}}
+        headers = {"Content-Type": "application/json"}
+    request = urllib.request.Request(endpoint, data=_json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            data = _json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"{provider} API returned HTTP {error.code}: {detail}") from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(f"Could not reach {provider}: {error.reason}") from error
+    if provider == "OpenAI":
+        choices = data.get("choices", [])
+        result = choices[0].get("message", {}).get("content", "") if choices else ""
+    else:
+        candidates = data.get("candidates", [])
+        parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+        result = "\\n".join(part.get("text", "") for part in parts if part.get("text"))
+    if not result.strip():
+        raise RuntimeError(f"{provider} returned no text. Check model name, API access, or safety filters.")
+    return result.strip()
+
+
+def ai_plant_health_assistant(label, confidence):
+    """Render optional LLM-generated summary and prevention guidance."""
+    plant, disease = split_label(label)
+    information = disease_information(label)
+    render_html("""
+        <div class="section-title">🌿 AI Plant Health Assistant</div>
+        <div class="glass-card">
+          <div style="color:#c5ffda;font-size:15px;font-weight:800;margin-bottom:7px;">Understand the result. Plan the next step.</div>
+          <div style="color:#9bb9a7;font-size:13px;line-height:1.7;">Generate a plain-English summary and prevention checklist using OpenAI or Gemini. Only the predicted crop, condition, confidence, and generic app notes are sent to the selected provider; your leaf image is not uploaded to the LLM.</div>
+        </div>
+    """)
+    provider = st.selectbox("AI provider", ["Gemini", "OpenAI"], key="plant_health_ai_provider")
+    key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
+    st.caption(f"{provider} API key: {'configured' if get_secret_value(key_name) else 'not configured'}")
+    if st.button("✨ Generate summary & prevention plan", use_container_width=True, key="generate_plant_health_guidance"):
+        with st.spinner(f"Generating plant-health guidance with {provider}..."):
+            try:
+                report = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
+                st.session_state["plant_health_guidance"] = {"provider": provider, "label": label, "report": report}
+            except Exception as error:
+                st.session_state.pop("plant_health_guidance", None)
+                st.error(str(error))
+    saved = st.session_state.get("plant_health_guidance")
+    if saved and saved.get("label") == label and saved.get("provider") == provider:
+        st.markdown(saved["report"])
+        st.caption("Educational guidance only. Confirm uncertain diagnoses locally before treatment.")
+
+
 def disease_information(label):
 
     plant, disease = split_label(label)
@@ -1123,6 +1219,8 @@ def disease_recognition():
 
     with st.expander("🌱 Management Guidance"):
         st.write(information["management"])
+
+    ai_plant_health_assistant(label, confidence)
 
     render_html(
         """
