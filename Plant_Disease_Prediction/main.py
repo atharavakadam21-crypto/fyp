@@ -16,6 +16,7 @@ from PIL import Image
 
 from rag_knowledge import retrieve_knowledge
 from rag_evaluation import validate_report
+from rag_claim_audit import test_gemini_connection, audit_report_claims
 
 
 # =========================================================
@@ -688,6 +689,13 @@ def ai_plant_health_assistant(label, confidence):
     provider = st.selectbox("AI provider", ["Gemini", "OpenAI"], key="plant_health_ai_provider")
     key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
     st.caption(f"{provider} API key: {'configured' if get_secret_value(key_name) else 'not configured'}")
+    if provider == "Gemini" and st.button("🔌 Test live Gemini connection", key="test_live_gemini_connection"):
+        try:
+            with st.spinner("Checking live Gemini API connection..."):
+                connection = test_gemini_connection()
+            st.success("Live Gemini API call succeeded · model: " + connection["model"])
+        except Exception as error:
+            st.error(str(error))
     if st.button("✨ Generate summary & prevention plan", use_container_width=True, key="generate_plant_health_guidance"):
         with st.spinner(f"Generating plant-health guidance with {provider}..."):
             try:
@@ -705,6 +713,37 @@ def ai_plant_health_assistant(label, confidence):
     saved = st.session_state.get("plant_health_guidance")
     if saved and saved.get("label") == label and saved.get("provider") == provider:
         st.markdown(saved["report"])
+        if st.button("🧾 Audit every factual claim against retrieved sources", key="audit_plant_health_claims"):
+            try:
+                with st.spinner("Gemini is checking each factual claim against the retrieved evidence..."):
+                    audit = audit_report_claims(saved["report"], saved.get("sources", []))
+                st.session_state["plant_health_claim_audit"] = {
+                    "label": saved["label"],
+                    "provider": saved["provider"],
+                    "audit": audit,
+                }
+            except Exception as error:
+                st.error("Claim audit failed: " + str(error))
+        saved_audit = st.session_state.get("plant_health_claim_audit")
+        if saved_audit and saved_audit.get("label") == label and saved_audit.get("provider") == provider:
+            audit = saved_audit["audit"]
+            summary = audit.get("summary", {})
+            st.markdown("#### Claim-by-claim evidence audit")
+            st.caption("Automated Gemini screening only; it can misjudge evidence. Manually verify high-impact agricultural or treatment claims.")
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Claims checked", summary.get("claim_count", 0))
+            m2.metric("Supported", summary.get("supported", 0))
+            m3.metric("Partially supported", summary.get("partially_supported", 0))
+            m4.metric("Unsupported / contradicted", summary.get("unsupported", 0) + summary.get("contradicted", 0))
+            for claim_index, claim in enumerate(audit.get("claims", []), start=1):
+                verdict = claim.get("verdict", "unsupported")
+                title = str(claim_index) + ". [" + verdict.replace("_", " ").title() + "] " + claim.get("claim", "")
+                with st.expander(title):
+                    st.write("**Reason:** " + claim.get("reason", "No reason supplied."))
+                    st.write("**Source IDs:** " + (", ".join(claim.get("source_ids", [])) or "None"))
+                    if claim.get("evidence_quote"):
+                        st.write("**Evidence quote:** " + claim["evidence_quote"])
+            st.caption(audit.get("limitations", "Automated screening only; verify important claims manually."))
         quality_issues = saved.get("quality_issues", [])
         if quality_issues:
             st.warning("Automated review found items to check:")
