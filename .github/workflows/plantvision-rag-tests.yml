@@ -28,3 +28,7 @@ jobs:
       - name: Run RAG unit tests
         working-directory: Plant_Disease_Prediction
         run: python -m unittest -v test_rag_knowledge.py
+
+      - name: Evaluate all 38 classifier labels
+        working-directory: Plant_Disease_Prediction
+        run: python evaluate_rag_retrieval.py
