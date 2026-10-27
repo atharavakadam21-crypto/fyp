@@ -1204,6 +1204,15 @@ def disease_recognition():
     render_html(
         """
         <div class="section-title">🔥 Grad-CAM Explainability</div>
+        <div class="glass-card">
+          <div style="color:#b9f4cc;font-size:15px;font-weight:800;margin-bottom:7px;">
+            See what influenced the CNN prediction
+          </div>
+          <div style="color:#9bb9a7;font-size:13px;line-height:1.7;">
+            The heatmap highlights image regions that contributed to the selected class score.
+            It is an explanation aid, not proof that a region contains a disease.
+          </div>
+        </div>
         """
     )
 
@@ -1212,31 +1221,75 @@ def disease_recognition():
             result["image"],
             int(indices[0])
         )
-        st.caption(
-            f"Grad-CAM uses {explanation['layer_name']} "
-            f"(feature map {explanation['feature_shape']}). "
-            "Highlighted regions indicate model sensitivity, not a confirmed lesion."
+
+        metadata_cols = st.columns(3)
+        with metadata_cols[0]:
+            st.metric("Target layer", explanation["layer_name"])
+        with metadata_cols[1]:
+            st.metric("Feature map", " × ".join(str(v) for v in explanation["feature_shape"][:2]))
+        with metadata_cols[2]:
+            st.metric("Heatmap variation", f"{explanation['heatmap_std']:.3f}")
+
+        opacity = st.slider(
+            "Heatmap overlay intensity",
+            min_value=0.10,
+            max_value=0.80,
+            value=0.40,
+            step=0.05,
+            help="Adjust how strongly the activation heatmap is blended with the original leaf."
         )
+
+        # Rebuild the coloured heatmap from the grayscale activation map so the
+        # slider changes the actual overlay, without rerunning CNN inference.
+        heatmap_gray = np.asarray(
+            explanation["heatmap"].convert("L"),
+            dtype=np.float32
+        ) / 255.0
+        heatmap_rgb = np.uint8(
+            np.clip(matplotlib.colormaps["jet"](heatmap_gray)[..., :3], 0.0, 1.0) * 255
+        )
+        coloured_heatmap = Image.fromarray(heatmap_rgb).convert("RGB")
+        adjustable_overlay = Image.blend(
+            explanation["original"].convert("RGB"),
+            coloured_heatmap,
+            alpha=float(opacity)
+        )
+
         explanation_cols = st.columns(3)
         explanation_panels = [
-            ("Original image", "original"),
-            ("Raw activation heatmap", "heatmap"),
-            ("Grad-CAM overlay", "overlay"),
+            ("Original leaf", explanation["original"]),
+            ("Activation heatmap", explanation["heatmap"]),
+            ("Adjustable Grad-CAM overlay", adjustable_overlay),
         ]
-        for column, (caption, key) in zip(explanation_cols, explanation_panels):
+        for column, (caption, image_panel) in zip(explanation_cols, explanation_panels):
             with column:
-                st.image(explanation[key], caption=caption, use_container_width=True)
-        with st.expander("Grad-CAM diagnostics"):
-            st.write({
-                "target_layer": explanation["layer_name"],
-                "feature_map_shape": explanation["feature_shape"],
-                "heatmap_min": round(explanation["heatmap_min"], 5),
-                "heatmap_max": round(explanation["heatmap_max"], 5),
-                "heatmap_standard_deviation": round(explanation["heatmap_std"], 5),
-            })
+                st.image(image_panel, caption=caption, use_container_width=True)
+
+        st.caption(
+            "Highlighted regions show model sensitivity for the predicted class. "
+            "They should not be interpreted as a medical-grade or lesion-segmentation mask."
+        )
+
+        with st.expander("Advanced Grad-CAM diagnostics"):
+            diagnostic_left, diagnostic_right = st.columns(2)
+            with diagnostic_left:
+                st.write("**Target convolution layer**", explanation["layer_name"])
+                st.write("**Feature map shape**", explanation["feature_shape"])
+                st.write("**Selected class index**", int(indices[0]))
+            with diagnostic_right:
+                st.write("**Heatmap minimum**", round(explanation["heatmap_min"], 5))
+                st.write("**Heatmap maximum**", round(explanation["heatmap_max"], 5))
+                st.write("**Heatmap standard deviation**", round(explanation["heatmap_std"], 5))
+            st.info(
+                "A non-empty heatmap confirms the visualization was generated, "
+                "but does not alone prove that highlighted regions are faithful to the disease."
+            )
 
     except Exception as error:
-        st.warning(f"Grad-CAM could not be generated: {error}")
+        st.warning(
+            "Grad-CAM could not be generated for this prediction. "
+            f"The CNN prediction remains available. Details: {error}"
+        )
 
     render_html(
         """
