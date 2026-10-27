@@ -126,28 +126,77 @@ KNOWLEDGE_DOCUMENTS = [
     },
 ]
 
+_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "in",
+    "is", "it", "of", "on", "or", "the", "to", "with", "what", "how",
+    "plant", "plants", "disease", "diseases", "symptom", "symptoms",
+    "prevention", "prevent", "treatment", "treatments", "management",
+    "guidance", "general", "common", "check", "checks", "leaf", "leaves",
+    "crop", "crops", "care", "condition", "conditions", "help", "advice",
+}
+_TOKEN_ALIASES = {
+    "viral": "virus",
+    "viruses": "virus",
+    "blights": "blight",
+    "spots": "spot",
+    "lesions": "lesion",
+    "leaves": "leaf",
+}
+
+
 def _tokens(text):
-    return re.findall(r"[a-z0-9]+", str(text).lower())
+    """Normalize words and common label variants for deterministic retrieval."""
+    raw_tokens = re.findall(r"[a-z0-9]+", str(text).lower())
+    normalized = [_TOKEN_ALIASES.get(token, token) for token in raw_tokens]
+    return [token for token in normalized if token not in _STOPWORDS]
+
 
 def retrieve_knowledge(query, top_k=3):
-    """Return top matching corpus passages using transparent lexical retrieval.
+    """Retrieve relevant passages using title-weighted lexical matching.
 
-    This starter uses token overlap rather than vector embeddings; it is a simple,
-    dependency-free RAG baseline and can later be upgraded to embedding retrieval.
+    This is an improved, dependency-free baseline, not semantic/vector search.
+    Generic query words are ignored, disease terms in titles receive extra weight,
+    and weak matches are discarded instead of returning unrelated passages.
     """
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
+        raise ValueError("top_k must be a positive integer")
+
     query_tokens = set(_tokens(query))
     if not query_tokens:
         return []
+
+    # Healthy predictions should not be paired with disease-specific guidance.
+    if "healthy" in query_tokens:
+        general = next(
+            (doc for doc in KNOWLEDGE_DOCUMENTS if doc["id"] == "PV-GENERAL-01"),
+            None,
+        )
+        return [{**general, "score": 1.0}] if general else []
+
     scored = []
     for doc in KNOWLEDGE_DOCUMENTS:
-        doc_tokens = set(_tokens(doc["title"] + " " + doc["text"]))
-        overlap = len(query_tokens & doc_tokens)
-        if overlap:
-            # Normalize overlap to avoid favoring longer documents.
-            score = overlap / max(1, len(query_tokens) ** 0.5 * len(doc_tokens) ** 0.25)
-            scored.append((score, doc))
+        title_tokens = set(_tokens(doc["title"]))
+        body_tokens = set(_tokens(doc["text"]))
+        title_matches = query_tokens & title_tokens
+        body_matches = query_tokens & body_tokens
+        matches = title_matches | body_matches
+
+        # Require at least two distinct disease/crop terms for multi-term queries.
+        # Single-term queries are accepted only when the term occurs in the title.
+        if len(query_tokens) == 1:
+            if not title_matches:
+                continue
+        elif len(matches) < 2:
+            continue
+
+        # Title matches are more discriminative than mentions in generic body text.
+        score = (3 * len(title_matches)) + len(body_matches)
+        coverage = len(matches) / len(query_tokens)
+        normalized_score = score / (3 * len(query_tokens) + len(query_tokens))
+        scored.append((normalized_score + coverage * 0.01, doc))
+
     scored.sort(key=lambda item: item[0], reverse=True)
     return [
         {**doc, "score": round(score, 4)}
-        for score, doc in scored[:max(1, int(top_k))]
+        for score, doc in scored[:top_k]
     ]
