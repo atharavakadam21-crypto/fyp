@@ -548,7 +548,13 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     import json as _json
     import urllib.request
     import urllib.error
-    retrieved_docs = retrieve_knowledge(f"{plant} {disease}", top_k=3)
+    key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
+    api_key = get_secret_value(key_name)
+    if not api_key:
+        raise RuntimeError(f"{key_name} is not configured. Add it to your environment or .streamlit/secrets.toml.")
+    retrieved_docs = retrieve_knowledge(
+        f"{plant} {disease}", top_k=3, provider=provider, api_key=api_key
+    )
     retrieved_context = "\n\n".join(
         f"[{doc['id']}] {doc['title']} (source: {doc['source_title']} — {doc['source_url']})\n{doc['text']}"
         for doc in retrieved_docs
@@ -576,9 +582,6 @@ Give clear escalation signs, especially severe/rapid spread, uncertain diagnosis
 Mention uncertainty and avoid promising a cure.
 Treat the classifier result as tentative, not a confirmed diagnosis. Make the advice crop- and disease-specific only when reasonably supported; do not invent facts. Separate general precautions from disease-specific recommendations. Keep the language easy for growers, use concise bullet points, and do not prescribe pesticide brands, exact chemical dosages, or mixing instructions."""
     if provider == "OpenAI":
-        api_key = get_secret_value("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
         model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         endpoint = "https://api.openai.com/v1/chat/completions"
         payload = {"model": model_name, "temperature": 0.3, "messages": [
@@ -586,9 +589,6 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
             {"role": "user", "content": prompt}]}
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     else:
-        api_key = get_secret_value("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         payload = {"systemInstruction": {"parts": [{"text": "Provide cautious plant health education; never claim a classifier confirms disease."}]},
@@ -666,7 +666,7 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
             # Preserve the original response if the retry fails.
             pass
 
-    return result
+    return {"report": result, "sources": retrieved_docs}
 
 
 def ai_plant_health_assistant(label, confidence):
@@ -686,12 +686,12 @@ def ai_plant_health_assistant(label, confidence):
     if st.button("✨ Generate summary & prevention plan", use_container_width=True, key="generate_plant_health_guidance"):
         with st.spinner(f"Generating plant-health guidance with {provider}..."):
             try:
-                report = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
+                guidance = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
                 st.session_state["plant_health_guidance"] = {
                     "provider": provider,
                     "label": label,
-                    "report": report,
-                    "sources": retrieve_knowledge(f"{plant} {disease}", top_k=3),
+                    "report": guidance["report"],
+                    "sources": guidance["sources"],
                 }
             except Exception as error:
                 st.session_state.pop("plant_health_guidance", None)
@@ -705,7 +705,9 @@ def ai_plant_health_assistant(label, confidence):
                 for source in sources:
                     st.markdown("**[" + source["id"] + "] " + source["title"] + "**")
                     st.markdown("Source: [" + source["source_title"] + "](" + source["source_url"] + ")")
-                    st.caption(source["source_publisher"] + " · Retrieval score: " + str(source["score"]))
+                    st.caption(source["source_publisher"] + " · Score: " + str(source["score"]) + " · Retrieval: " + source.get("retrieval_method", "unknown"))
+                    if source.get("retrieval_method") == "lexical_fallback":
+                        st.warning("Semantic embeddings were unavailable; this passage was found using keyword retrieval.")
                     st.write(source["text"])
             else:
                 st.info("No local knowledge passages were retrieved for this report.")
