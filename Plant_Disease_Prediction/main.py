@@ -824,75 +824,72 @@ def dashboard():
 # =========================================================
 
 def generate_gradcam(image, class_index):
+    """Generate a standard Grad-CAM explanation using a spatial feature layer."""
 
     if model is None:
         raise RuntimeError("The trained model is not available.")
 
-    convolution_layers = [
-        layer
-        for layer in model.layers
-        if isinstance(layer, tf.keras.layers.Conv2D)
-    ]
-
-    if not convolution_layers:
-        raise RuntimeError("No convolutional layer was found for Grad-CAM.")
-
-    last_conv_layer = convolution_layers[-1]
+    # conv2d_7 retains a 12x12 spatial map; the final convolution is only 4x4.
+    try:
+        target_layer = model.get_layer("conv2d_7")
+    except ValueError:
+        convolution_layers = [
+            layer for layer in model.layers
+            if isinstance(layer, tf.keras.layers.Conv2D)
+        ]
+        if not convolution_layers:
+            raise RuntimeError("No convolutional layer was found for Grad-CAM.")
+        target_layer = convolution_layers[-1]
 
     grad_model = tf.keras.models.Model(
         inputs=model.inputs,
-        outputs=[last_conv_layer.output, model.output]
+        outputs=[target_layer.output, model.output],
     )
 
-    input_array = preprocess_image(image)
-    input_tensor = tf.convert_to_tensor(input_array)
+    input_tensor = tf.convert_to_tensor(preprocess_image(image))
 
     with tf.GradientTape() as tape:
+        activations, predictions = grad_model(input_tensor, training=False)
+        class_score = predictions[:, int(class_index)]
 
-        conv_outputs, predictions = grad_model(input_tensor)
-        class_channel = predictions[:, class_index]
+    gradients = tape.gradient(class_score, activations)
+    if gradients is None:
+        raise RuntimeError("Could not calculate gradients for the selected class.")
 
-    gradients = tape.gradient(
-        class_channel,
-        conv_outputs
+    # Standard Grad-CAM: average gradients over the spatial dimensions.
+    channel_weights = tf.reduce_mean(gradients, axis=(1, 2))
+    heatmap = tf.reduce_sum(
+        activations[0] * channel_weights[0][tf.newaxis, tf.newaxis, :],
+        axis=-1,
     )
-
-    pooled_gradients = tf.reduce_mean(
-        gradients,
-        axis=(0, 1, 2)
-    )
-
-    conv_outputs = conv_outputs[0]
-    heatmap = conv_outputs @ pooled_gradients[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-    heatmap = tf.maximum(heatmap, 0)
+    heatmap = tf.nn.relu(heatmap)
 
     maximum = tf.reduce_max(heatmap)
+    heatmap = tf.math.divide_no_nan(heatmap, maximum).numpy()
 
-    if float(maximum) > 0:
-        heatmap /= maximum
+    if not np.isfinite(heatmap).all() or float(np.max(heatmap)) <= 0:
+        raise RuntimeError(
+            "Grad-CAM produced an empty heatmap for this class. "
+            "Try another image or inspect the model prediction."
+        )
 
-    heatmap = heatmap.numpy()
+    # Resize continuous heatmap before applying the colour map.
+    heatmap_image = Image.fromarray(
+        np.uint8(np.clip(heatmap, 0.0, 1.0) * 255)
+    ).resize(image.size, Image.Resampling.BILINEAR)
 
-    heatmap = np.uint8(255 * heatmap)
-    colormap = cm.get_cmap("jet")
-    colored_heatmap = colormap(np.arange(256))[:, :3]
-    colored_heatmap = colored_heatmap[heatmap]
-    colored_heatmap = np.uint8(colored_heatmap * 255)
-
-    colored_heatmap = Image.fromarray(colored_heatmap).resize(
-        image.size
+    heatmap_array = np.asarray(heatmap_image, dtype=np.float32) / 255.0
+    color_map = cm.get_cmap("jet")
+    colored_array = np.uint8(
+        np.clip(color_map(heatmap_array)[..., :3], 0.0, 1.0) * 255
     )
 
+    colored_heatmap = Image.fromarray(colored_array).convert("RGB")
     original = image.convert("RGB")
-    overlay = Image.blend(
-        original,
-        colored_heatmap.convert("RGB"),
-        alpha=0.45
-    )
 
+    # A lighter blend preserves the leaf details beneath the explanation.
+    overlay = Image.blend(original, colored_heatmap, alpha=0.35)
     return overlay
-
 
 # =========================================================
 # DISEASE RECOGNITION
