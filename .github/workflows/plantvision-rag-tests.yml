@@ -1,0 +1,30 @@
+name: PlantVision RAG tests
+
+on:
+  push:
+    branches:
+      - feature/rag-grounded-plant-assistant
+  pull_request:
+    paths:
+      - "Plant_Disease_Prediction/**"
+      - ".github/workflows/plantvision-rag-tests.yml"
+
+jobs:
+  rag-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile Python files
+        working-directory: Plant_Disease_Prediction
+        run: python -m py_compile main.py rag_knowledge.py test_rag_knowledge.py
+
+      - name: Run RAG unit tests
+        working-directory: Plant_Disease_Prediction
+        run: python -m unittest -v test_rag_knowledge.py
