@@ -16,9 +16,15 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 def _api_key():
     key = os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
+        try:
+            import streamlit as st
+            key = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
+        except Exception:
+            key = ""
+    if not key:
         raise RuntimeError(
-            "GEMINI_API_KEY is not configured in this process. "
-            "Set it in your terminal or Streamlit secrets, then restart the app."
+            "GEMINI_API_KEY is not configured. Set it in your terminal or "
+            ".streamlit/secrets.toml, then restart the app."
         )
     return key
 
