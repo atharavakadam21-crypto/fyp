@@ -23,7 +23,7 @@ jobs:
 
       - name: Compile Python files
         working-directory: Plant_Disease_Prediction
-        run: python -m py_compile main.py rag_knowledge.py test_rag_knowledge.py
+        run: python -m py_compile main.py rag_knowledge.py rag_embeddings.py test_rag_knowledge.py
 
       - name: Run RAG unit tests
         working-directory: Plant_Disease_Prediction
