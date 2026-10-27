@@ -14,6 +14,8 @@ import matplotlib.cm as cm
 
 from PIL import Image
 
+from rag_knowledge import retrieve_knowledge
+
 
 # =========================================================
 # PAGE CONFIGURATION
@@ -546,9 +548,17 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     import json as _json
     import urllib.request
     import urllib.error
+    retrieved_docs = retrieve_knowledge(f"{plant} {disease} symptoms prevention treatment", top_k=3)
+    retrieved_context = "\\n\\n".join(
+        f"[{doc['id']}] {doc['title']} (source: {doc['source']})\\n{doc['text']}"
+        for doc in retrieved_docs
+    ) or "No relevant local knowledge-base passages were retrieved."
     prompt = f"""You are PlantVision AI's plant-health education assistant.
 CNN prediction: crop={plant}; predicted condition={disease}; model confidence={confidence:.1%}.
 Existing app notes (possibly generic): symptoms={symptoms}; management={management}.
+Retrieved local knowledge passages (supporting context, not guaranteed truth):
+{retrieved_context}
+Use retrieved passages where relevant. Do not invent citations. Cite a supporting passage by ID such as [PV-GENERAL-01]. If passages do not support a specific claim, label it general guidance and recommend local expert confirmation.
 Return a practical, grower-friendly Markdown report using these exact headings:
 ## 1. What the prediction means
 Explain the predicted condition in plain language and state that the CNN prediction is not a confirmed diagnosis.
@@ -677,14 +687,28 @@ def ai_plant_health_assistant(label, confidence):
         with st.spinner(f"Generating plant-health guidance with {provider}..."):
             try:
                 report = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
-                st.session_state["plant_health_guidance"] = {"provider": provider, "label": label, "report": report}
+                st.session_state["plant_health_guidance"] = {
+                    "provider": provider,
+                    "label": label,
+                    "report": report,
+                    "sources": retrieve_knowledge(f"{plant} {disease} symptoms prevention treatment", top_k=3),
+                }
             except Exception as error:
                 st.session_state.pop("plant_health_guidance", None)
                 st.error(str(error))
     saved = st.session_state.get("plant_health_guidance")
     if saved and saved.get("label") == label and saved.get("provider") == provider:
         st.markdown(saved["report"])
-        st.caption("Educational guidance only. Confirm uncertain diagnoses locally before treatment.")
+        with st.expander("📚 Retrieved knowledge used by the assistant"):
+            sources = saved.get("sources", [])
+            if sources:
+                for source in sources:
+                    st.markdown("**[" + source["id"] + "] " + source["title"] + "**")
+                    st.caption("Source type: " + source["source"] + " · Retrieval score: " + str(source["score"]))
+                    st.write(source["text"])
+            else:
+                st.info("No local knowledge passages were retrieved for this report.")
+        st.caption("Educational guidance only. The starter knowledge base is not a substitute for verified regional agricultural advice.")
 
 
 def disease_information(label):
