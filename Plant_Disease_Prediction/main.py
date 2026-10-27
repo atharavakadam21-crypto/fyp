@@ -549,8 +549,22 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     prompt = f"""You are PlantVision AI's plant-health education assistant.
 CNN prediction: crop={plant}; predicted condition={disease}; model confidence={confidence:.1%}.
 Existing app notes (possibly generic): symptoms={symptoms}; management={management}.
-Return concise Markdown with headings: What this prediction means; Signs to check; Prevention and care plan; When to contact an agricultural expert; Important cautions.
-Treat the result as a tentative prediction, not a confirmed diagnosis. Give low-risk practical steps first. Be crop/disease-specific only when reasonably supported; mention lookalike diseases and environmental causes. Do not prescribe pesticide brands, exact chemical dosages, or mixing instructions. Advise following local agricultural extension guidance and product labels. Keep language easy for growers."""
+Return a practical, grower-friendly Markdown report using these exact headings:
+## 1. What the prediction means
+Explain the predicted condition in plain language and state that the CNN prediction is not a confirmed diagnosis.
+## 2. Symptoms to check
+List visible signs that would support or weaken this prediction, plus important lookalike conditions where relevant.
+## 3. Immediate actions
+Give safe, practical steps the grower can take now to limit spread or stress while confirming the diagnosis.
+## 4. Prevention measures
+Give at least 5 specific, actionable prevention steps tailored to this crop and condition when supported: sanitation and removal of infected debris, watering/leaf-wetness practices, airflow and spacing, crop rotation or clean planting material where relevant, monitoring, and resistant varieties where available. Do not force irrelevant measures; explain when a measure does not apply.
+## 5. Treatment and ongoing care
+Start with non-chemical integrated pest/disease management. If a pesticide may be appropriate, do not name a brand or give a dose/mixing instructions; tell the user to consult local agricultural extension guidance and follow the registered product label.
+## 6. When to contact an agricultural expert
+Give clear escalation signs, especially severe/rapid spread, uncertain diagnosis, or valuable crops at risk.
+## 7. Important cautions
+Mention uncertainty and avoid promising a cure.
+Treat the classifier result as tentative, not a confirmed diagnosis. Make the advice crop- and disease-specific only when reasonably supported; do not invent facts. Separate general precautions from disease-specific recommendations. Keep the language easy for growers, use concise bullet points, and do not prescribe pesticide brands, exact chemical dosages, or mixing instructions."""
     if provider == "OpenAI":
         api_key = get_secret_value("OPENAI_API_KEY")
         if not api_key:
