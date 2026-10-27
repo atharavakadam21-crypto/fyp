@@ -235,8 +235,14 @@ def main():
         raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
     if not MAIN_PATH.is_file():
         raise FileNotFoundError(f"main.py not found: {MAIN_PATH}")
-    paths = [Path(arg) for arg in sys.argv[1:]] or [DEFAULT_IMAGE]
-    paths = [p if p.is_absolute() else ROOT / p for p in paths]
+    if sys.argv[1:]:
+        paths = [Path(arg) for arg in sys.argv[1:]]
+        paths = [p if p.is_absolute() else ROOT / p for p in paths]
+    else:
+        # Test images may be copied either as test_images/<file> or
+        # test_images/test/<file>; find the default sample in either layout.
+        matches = list(ROOT.glob("test_images/**/TomatoEarlyBlight1.JPG"))
+        paths = [matches[0] if matches else DEFAULT_IMAGE]
     missing = [str(p) for p in paths if not p.is_file()]
     if missing:
         raise FileNotFoundError(
