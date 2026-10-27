@@ -4,13 +4,12 @@ This is a starter RAG corpus, not an authoritative pesticide guide. Expand it wi
 reviewed agricultural-extension documents before relying on it for field decisions.
 """
 import re
-from collections import Counter
 
 KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-GENERAL-01",
         "title": "General plant disease prevention",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Preventing plant diseases in the garden",
         "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
         "source_publisher": "University of Minnesota Extension",
@@ -27,7 +26,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-FUNGAL-01",
         "title": "General fungal leaf disease management",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Preventing plant diseases in the garden",
         "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
         "source_publisher": "University of Minnesota Extension",
@@ -43,7 +42,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-BACTERIAL-01",
         "title": "General bacterial plant disease precautions",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Preventing plant diseases in the garden",
         "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
         "source_publisher": "University of Minnesota Extension",
@@ -58,7 +57,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-VIRAL-01",
         "title": "General viral plant disease precautions",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Preventing plant diseases in the garden",
         "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/preventing-plant-diseases-in-the-garden",
         "source_publisher": "University of Minnesota Extension",
@@ -74,7 +73,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-POTATO-EARLY-01",
         "title": "Potato early blight: cautious field checks",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Potato leaf spots: early blight and late blight",
         "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/vegetable/potato/leavesspots.html",
         "source_publisher": "University of Minnesota Extension",
@@ -90,7 +89,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-POTATO-LATE-01",
         "title": "Potato late blight: urgent escalation",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Potato leaf spots: early blight and late blight",
         "source_url": "https://apps.extension.umn.edu/garden/diagnose/plant/vegetable/potato/leavesspots.html",
         "source_publisher": "University of Minnesota Extension",
@@ -107,7 +106,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-APPLE-SCAB-01",
         "title": "Apple scab: cautious field checks",
-        "source": "PlantVision curated baseline guidance",
+        "source": "University of Minnesota Extension",
         "source_title": "Apple scab of apples and crabapples",
         "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/apple-scab",
         "source_publisher": "University of Minnesota Extension",
@@ -123,7 +122,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-CORN-RUST-01",
         "title": "Corn common rust: cautious field checks",
-        "source": "PlantVision curated baseline guidance",
+        "source": "Penn State Extension",
         "source_title": "Not every spot is the same: identifying corn leaf diseases",
         "source_url": "https://extension.psu.edu/not-every-spot-is-the-same-identifying-corn-leaf-diseases",
         "source_publisher": "Penn State Extension",
@@ -138,7 +137,7 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "PV-TOMATO-LEAF-01",
         "title": "Tomato leaf spot and blight: general checks",
-        "source": "PlantVision curated baseline guidance",
+        "source": "UC Statewide IPM Program",
         "source_title": "Tomato pest management guidelines",
         "source_url": "https://ipm.ucanr.edu/agriculture/tomato/",
         "source_publisher": "UC Statewide IPM Program",
@@ -150,7 +149,7 @@ KNOWLEDGE_DOCUMENTS = [
             "plant debris according to local recommendations. Confirm the likely cause "
             "before selecting disease-specific treatment."
         ),
-    },,
+    },
 
     {
         "id": "PV-APPLE-BLACK-ROT-01",
