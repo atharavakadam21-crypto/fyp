@@ -359,16 +359,10 @@ def _tokens(text):
     return [token for token in normalized if token not in _STOPWORDS]
 
 
-def retrieve_knowledge(query, top_k=3):
-    """Retrieve relevant passages using title-weighted lexical matching.
+_EMBEDDING_CACHE = {}
 
-    This is an improved, dependency-free baseline, not semantic/vector search.
-    Generic query words are ignored, disease terms in titles receive extra weight,
-    and weak matches are discarded instead of returning unrelated passages.
-    """
-    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
-        raise ValueError("top_k must be a positive integer")
 
+def _retrieve_lexical(query, top_k):
     query_tokens = set(_tokens(query))
     if not query_tokens:
         return []
@@ -379,7 +373,7 @@ def retrieve_knowledge(query, top_k=3):
             (doc for doc in KNOWLEDGE_DOCUMENTS if doc["id"] == "PV-GENERAL-01"),
             None,
         )
-        return [{**general, "score": 1.0}] if general else []
+        return [{**general, "score": 1.0, "retrieval_method": "lexical"}] if general else []
 
     scored = []
     for doc in KNOWLEDGE_DOCUMENTS:
@@ -389,15 +383,12 @@ def retrieve_knowledge(query, top_k=3):
         body_matches = query_tokens & body_tokens
         matches = title_matches | body_matches
 
-        # Require at least two distinct disease/crop terms for multi-term queries.
-        # Single-term queries are accepted only when the term occurs in the title.
         if len(query_tokens) == 1:
             if not title_matches:
                 continue
         elif len(matches) < 2 or (len(matches) / len(query_tokens)) < 0.7:
             continue
 
-        # Title matches are more discriminative than mentions in generic body text.
         score = (3 * len(title_matches)) + len(body_matches)
         coverage = len(matches) / len(query_tokens)
         normalized_score = score / (3 * len(query_tokens) + len(query_tokens))
@@ -405,6 +396,65 @@ def retrieve_knowledge(query, top_k=3):
 
     scored.sort(key=lambda item: item[0], reverse=True)
     return [
-        {**doc, "score": round(score, 4)}
+        {**doc, "score": round(score, 4), "retrieval_method": "lexical"}
         for score, doc in scored[:top_k]
     ]
+
+
+def _retrieve_semantic(query, top_k, provider, api_key):
+    import hashlib
+    from rag_embeddings import cosine_similarity, embed_texts
+
+    document_texts = [
+        f"{doc['title']}\n{doc['text']}"
+        for doc in KNOWLEDGE_DOCUMENTS
+    ]
+    corpus_hash = hashlib.sha256(
+        "\n".join(document_texts).encode("utf-8")
+    ).hexdigest()
+    key_fingerprint = hashlib.sha256(str(api_key).encode("utf-8")).hexdigest()
+    cache_key = (provider, key_fingerprint, corpus_hash)
+
+    if cache_key not in _EMBEDDING_CACHE:
+        _EMBEDDING_CACHE[cache_key] = embed_texts(provider, api_key, document_texts)
+    document_vectors = _EMBEDDING_CACHE[cache_key]
+    query_vector = embed_texts(provider, api_key, [query])[0]
+
+    scored = []
+    for doc, vector in zip(KNOWLEDGE_DOCUMENTS, document_vectors):
+        score = cosine_similarity(query_vector, vector)
+        if score >= 0.35:
+            scored.append((score, doc))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [
+        {
+            **doc,
+            "score": round(score, 4),
+            "retrieval_method": "semantic",
+        }
+        for score, doc in scored[:top_k]
+    ]
+
+
+def retrieve_knowledge(query, top_k=3, provider=None, api_key=None):
+    """Retrieve source-backed passages semantically when credentials are available.
+
+    If embedding retrieval fails or returns no sufficiently similar passages, the
+    dependency-free lexical retriever is used. The result marks which method ran.
+    """
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
+        raise ValueError("top_k must be a positive integer")
+
+    if provider and api_key:
+        try:
+            results = _retrieve_semantic(query, top_k, provider, api_key)
+            if results:
+                return results
+        except Exception:
+            # Keep the assistant usable during provider outages, but label fallback.
+            pass
+        return [
+            {**doc, "retrieval_method": "lexical_fallback"}
+            for doc in _retrieve_lexical(query, top_k)
+        ]
+    return _retrieve_lexical(query, top_k)
