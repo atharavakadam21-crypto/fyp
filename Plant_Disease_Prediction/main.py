@@ -550,7 +550,7 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     import urllib.error
     retrieved_docs = retrieve_knowledge(f"{plant} {disease}", top_k=3)
     retrieved_context = "\n\n".join(
-        f"[{doc['id']}] {doc['title']} (source: {doc['source']})\n{doc['text']}"
+        f"[{doc['id']}] {doc['title']} (source: {doc['source_title']} — {doc['source_url']})\n{doc['text']}"
         for doc in retrieved_docs
     ) or "No relevant local knowledge-base passages were retrieved."
     prompt = f"""You are PlantVision AI's plant-health education assistant.
@@ -704,7 +704,8 @@ def ai_plant_health_assistant(label, confidence):
             if sources:
                 for source in sources:
                     st.markdown("**[" + source["id"] + "] " + source["title"] + "**")
-                    st.caption("Source type: " + source["source"] + " · Retrieval score: " + str(source["score"]))
+                    st.markdown("Source: [" + source["source_title"] + "](" + source["source_url"] + ")")
+                    st.caption(source["source_publisher"] + " · Retrieval score: " + str(source["score"]))
                     st.write(source["text"])
             else:
                 st.info("No local knowledge passages were retrieved for this report.")
