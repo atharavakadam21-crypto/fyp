@@ -616,7 +616,7 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
     else:
         candidates = data.get("candidates", [])
         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
-        result = "\\n".join(part.get("text", "") for part in parts if part.get("text"))
+        result = "\n".join(part.get("text", "") for part in parts if part.get("text"))
     if not result.strip():
         raise RuntimeError(f"{provider} returned no text. Check model name, API access, or safety filters.")
 
