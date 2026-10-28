@@ -133,7 +133,7 @@ def audit_report_claims(report, retrieved_docs):
     # Accept JSON wrapped in Markdown or a short preamble, but require a
     # complete JSON object. Truncated output fails safely with a useful message.
     result = None
-    cleaned = re.sub(r"^\\s*```(?:json)?\\s*|\\s*```\\s*$", "", raw.strip(), flags=re.IGNORECASE)
+    cleaned = re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", raw.strip(), flags=re.IGNORECASE)
     candidates = [raw.strip()]
     if cleaned != candidates[0]:
         candidates.append(cleaned)
