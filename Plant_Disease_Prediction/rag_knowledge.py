@@ -472,7 +472,75 @@ KNOWLEDGE_DOCUMENTS = [
             "Use clean transplants, manage weeds and plant debris, and consult local extension "
             "guidance before selecting treatment."
         ),
+    },,
+    {
+        "id": "PV-INDIA-ICAR-IPM-RESOURCES-01",
+        "title": "India crop pest and disease management resources from ICAR NRIIPM",
+        "source": "ICAR-National Research Institute for Integrated Pest Management",
+        "source_title": "Extension Folders",
+        "source_url": "https://nriipm.res.in/extension-folders.aspx",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), NRIIPM",
+        "text": (
+            "For India-specific crop protection guidance, ICAR-NRIIPM publishes extension "
+            "folders on management of major pests and diseases for crops including bitter "
+            "gourd, bottle gourd, brinjal, chilli, cole crops, cucumber, guava, kinnow, okra, "
+            "onion, potato and tomato. The site also lists resources on maize pest and disease "
+            "identification, integrated pest management in basmati rice, and cotton boll rot. "
+            "Use these crop-specific extension materials to cross-check local symptoms and "
+            "management advice. Availability of a resource does not mean it applies to every "
+            "state, cultivar, season or production system; consult local agricultural experts."
+        ),
     },
+    {
+        "id": "PV-INDIA-ICAR-SURVEILLANCE-01",
+        "title": "Indian crop pest and disease surveillance databases",
+        "source": "ICAR-National Research Institute for Integrated Pest Management",
+        "source_title": "Online Databases",
+        "source_url": "https://nriipm.res.in/OnlineDatabases.aspx",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), NRIIPM",
+        "text": (
+            "ICAR-NRIIPM lists agricultural surveillance and decision-support resources, "
+            "including the National Pest Surveillance System, the Horticulture Pest Surveillance "
+            "and Advisory Project for Maharashtra, Haryana horticultural pest surveillance and "
+            "advisory services, a mango decision-support system, and a crop pest information "
+            "system. These resources can help users look for region- and crop-relevant alerts "
+            "or advisories. Check the linked service for current coverage and recommendations; "
+            "this knowledge passage is a directory summary, not a live surveillance result."
+        ),
+    },
+    {
+        "id": "PV-INDIA-ICAR-IIHR-PORTAL-01",
+        "title": "Indian horticulture crop diagnosis and management portal",
+        "source": "ICAR-Indian Institute of Horticultural Research",
+        "source_title": "Web applications on horticultural crops",
+        "source_url": "https://webapps.iihr.res.in/",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), IIHR",
+        "text": (
+            "ICAR-IIHR provides web applications for fruit and vegetable crop management, "
+            "including disease management and pest management modules with symptom information "
+            "and control measures. The portal lists crop resources such as mango, papaya, guava, "
+            "pomegranate, sapota, watermelon, okra, brinjal, onion, grapes, chilli and tomato. "
+            "Use the portal to find crop-specific information and cross-check a model prediction. "
+            "A resource listing is not itself a diagnosis; verify the crop, disease, region and "
+            "current guidance before acting."
+        ),
+    },
+    {
+        "id": "PV-INDIA-ICAR-KNOWLEDGE-PORTAL-01",
+        "title": "ICAR agricultural knowledge and crop expert resources",
+        "source": "Indian Council of Agricultural Research",
+        "source_title": "Technologies and Knowledge Resources",
+        "source_url": "https://icar.gov.in/en/technologies-and-knowledge-resources",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR)",
+        "text": (
+            "ICAR maintains a directory of agricultural digital resources, including crop "
+            "knowledge portals and expert systems such as rice knowledge management, maize "
+            "expert systems, wheat crop management, seed-spice expert systems and CaneInfo. "
+            "These can be starting points for crop-specific background and management information. "
+            "Open the original resource to check its scope, date and geographic relevance. "
+            "This directory does not replace current state agricultural university or extension advice."
+        ),
+    }
 ]
 
 _STOPWORDS = {
