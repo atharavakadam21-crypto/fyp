@@ -588,14 +588,14 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
         endpoint = "https://api.openai.com/v1/chat/completions"
         payload = {"model": model_name, "temperature": 0.3, "messages": [
             {"role": "system", "content": "Provide cautious, evidence-aware plant health education. Never claim a classifier confirms disease."},
-            {"role": "user", "content": prompt}]}
+            {"role": "user", "content": prompt}], "max_tokens": 3200}
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     else:
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         payload = {"systemInstruction": {"parts": [{"text": "Provide cautious plant health education; never claim a classifier confirms disease."}]},
                    "contents": [{"parts": [{"text": prompt}]}],
-                   "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2400}}
+                   "generationConfig": {"temperature": 0.2, "maxOutputTokens": 3200}}
         headers = {"Content-Type": "application/json"}
     request = urllib.request.Request(endpoint, data=_json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
     try:
@@ -603,6 +603,10 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
             data = _json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
+        if error.code == 429:
+            raise RuntimeError(f"{provider} API quota/billing limit reached (HTTP 429). Check provider billing and usage limits. No automatic retry was made to avoid consuming more quota. Provider details: {detail}") from error
+        if error.code in (401, 403):
+            raise RuntimeError(f"{provider} API authentication/permission error (HTTP {error.code}). Check the key and model access. Provider details: {detail}") from error
         raise RuntimeError(f"{provider} API returned HTTP {error.code}: {detail}") from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"Could not reach {provider}: {error.reason}") from error
@@ -617,57 +621,7 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
         raise RuntimeError(f"{provider} returned no text. Check model name, API access, or safety filters.")
 
     result = result.strip()
-    # Gemini can occasionally stop after only the first requested headings.
-    # Detect that case and ask once for the missing prevention/treatment sections.
-    required_sections = [
-        "What the prediction means",
-        "Symptoms to check",
-        "Immediate actions",
-        "Prevention measures",
-        "Treatment and ongoing care",
-        "When to contact an agricultural expert",
-        "Important cautions",
-    ]
-    missing_sections = [
-        heading for heading in required_sections
-        if heading.casefold() not in result.casefold()
-    ]
-    if provider == "Gemini" and missing_sections:
-        follow_up = (
-            "Your previous answer was incomplete. Return a complete standalone "
-            "Markdown report, not just a continuation. Include all seven numbered "
-            "headings: "
-            + "; ".join(f"{i + 1}. {heading}" for i, heading in enumerate(required_sections))
-            + ". The Prevention measures section must contain at least five actionable "
-            "steps when applicable. Do not omit sections. Keep advice cautious and "
-            "do not provide pesticide brands or dosages.\n\nPrevious incomplete answer:\n"
-            + result
-        )
-        follow_payload = {
-            "systemInstruction": {"parts": [{"text": "You are a careful plant-health education assistant. Always return all requested sections and actionable prevention advice. Do not claim an AI prediction is a confirmed diagnosis."}]},
-            "contents": [{"parts": [{"text": prompt + "\n\n" + follow_up}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2400},
-        }
-        follow_request = urllib.request.Request(
-            endpoint,
-            data=_json.dumps(follow_payload).encode("utf-8"),
-            headers=headers,
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(follow_request, timeout=45) as response:
-                follow_data = _json.loads(response.read().decode("utf-8"))
-            follow_candidates = follow_data.get("candidates", [])
-            follow_parts = follow_candidates[0].get("content", {}).get("parts", []) if follow_candidates else []
-            follow_result = "\\n".join(
-                part.get("text", "") for part in follow_parts if part.get("text")
-            ).strip()
-            if follow_result:
-                result = follow_result
-        except (urllib.error.HTTPError, urllib.error.URLError):
-            # Preserve the original response if the retry fails.
-            pass
-
+    # Avoid a second automatic generation request; validation below flags incomplete reports.
     return {
         "report": result,
         "sources": retrieved_docs,
