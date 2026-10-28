@@ -472,7 +472,7 @@ KNOWLEDGE_DOCUMENTS = [
             "Use clean transplants, manage weeds and plant debris, and consult local extension "
             "guidance before selecting treatment."
         ),
-    },,
+    },
     {
         "id": "PV-INDIA-ICAR-IPM-RESOURCES-01",
         "title": "India crop pest and disease management resources from ICAR NRIIPM",
