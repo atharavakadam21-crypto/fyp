@@ -23,11 +23,11 @@ jobs:
 
       - name: Compile Python files
         working-directory: Plant_Disease_Prediction
-        run: python -m py_compile main.py rag_knowledge.py rag_embeddings.py rag_evaluation.py rag_claim_audit.py test_rag_knowledge.py
+        run: python -m py_compile main.py rag_knowledge.py rag_embeddings.py rag_evaluation.py rag_claim_audit.py test_rag_knowledge.py test_rag_quality.py
 
       - name: Run RAG unit tests
         working-directory: Plant_Disease_Prediction
-        run: python -m unittest -v test_rag_knowledge.py
+        run: python -m unittest -v test_rag_knowledge.py test_rag_quality.py
 
       - name: Evaluate all 38 classifier labels
         working-directory: Plant_Disease_Prediction
