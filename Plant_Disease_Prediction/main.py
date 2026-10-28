@@ -643,6 +643,10 @@ def ai_plant_health_assistant(label, confidence):
     provider = st.selectbox("AI provider", ["Gemini", "OpenAI"], key="plant_health_ai_provider")
     key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
     st.caption(f"{provider} API key: {'configured' if get_secret_value(key_name) else 'not configured'}")
+    if os.getenv("PLANTVISION_SEMANTIC_RETRIEVAL", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        st.caption("Hybrid RAG retrieval is enabled (lexical + semantic). Semantic embeddings make an additional provider API request.")
+    else:
+        st.caption("Quota-saving mode: deterministic lexical retrieval is active. Set PLANTVISION_SEMANTIC_RETRIEVAL=1 to enable hybrid semantic retrieval when API quota is available.")
     if provider == "Gemini" and st.button("🔌 Test live Gemini connection", key="test_live_gemini_connection"):
         try:
             with st.spinner("Checking live Gemini API connection..."):
