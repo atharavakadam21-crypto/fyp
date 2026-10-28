@@ -138,7 +138,7 @@ class RetrievalKnowledgeTests(unittest.TestCase):
                 )
         self.assertTrue(results)
         self.assertEqual(results[0]["id"], "PV-POTATO-LATE-01")
-        self.assertEqual(results[0]["retrieval_method"], "semantic")
+        self.assertEqual(results[0]["retrieval_method"], "hybrid_rrf")
         _EMBEDDING_CACHE.clear()
 
     def test_semantic_failure_uses_marked_lexical_fallback(self):
