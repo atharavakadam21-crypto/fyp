@@ -505,32 +505,49 @@ _EMBEDDING_CACHE = {}
 
 
 def _retrieve_lexical(query, top_k):
-    """Rank passages with a deterministic, dependency-free lexical score."""
+    """Rank source passages using crop-aware lexical matching and IDF weighting."""
     query_tokens = list(dict.fromkeys(_tokens(query)))
     if not query_tokens:
         return []
 
-    # Healthy predictions should only receive general plant-care guidance.
-    if "healthy" in query_tokens:
+    query_set = set(query_tokens)
+    if "healthy" in query_set:
         general = next((doc for doc in KNOWLEDGE_DOCUMENTS if doc["id"] == "PV-GENERAL-01"), None)
         return [{**general, "score": 1.0, "retrieval_method": "lexical"}] if general else []
 
-    query_set = set(query_tokens)
+    crop_terms = {
+        "apple", "blueberry", "cherry", "corn", "maize", "grape", "orange", "citrus",
+        "peach", "pepper", "potato", "raspberry", "soybean", "squash", "strawberry", "tomato"
+    }
+    query_crops = query_set & crop_terms
     corpus_size = max(len(KNOWLEDGE_DOCUMENTS), 1)
-    tokenized_docs = [(doc, set(_tokens(doc["title"])), set(_tokens(doc["text"]))) for doc in KNOWLEDGE_DOCUMENTS]
-    document_frequency = {token: sum(token in title or token in body for _, title, body in tokenized_docs) for token in query_set}
+    tokenized_docs = []
+    for doc in KNOWLEDGE_DOCUMENTS:
+        title = set(_tokens(doc["title"]))
+        body = set(_tokens(doc["text"]))
+        doc_crops = set(_tokens(doc["title"] + " " + doc["text"])) & crop_terms
+        tokenized_docs.append((doc, title, body, doc_crops))
+    document_frequency = {token: sum(token in title or token in body for _, title, body, _ in tokenized_docs) for token in query_set}
     scored = []
-    for doc, title_tokens, body_tokens in tokenized_docs:
+    for doc, title_tokens, body_tokens, doc_crops in tokenized_docs:
         matched = query_set & (title_tokens | body_tokens)
         if not matched:
             continue
+        # When a crop is explicitly named, strongly prefer that crop-specific evidence.
+        if query_crops and doc_crops and not (query_crops & doc_crops):
+            crop_penalty = 0.12
+        else:
+            crop_penalty = 1.0
         weighted_score = 0.0
         for token in matched:
             idf = 1.0 + math.log((corpus_size + 1) / (document_frequency[token] + 1))
-            weighted_score += (2.5 if token in title_tokens else 1.0) * idf
+            weighted_score += (4.0 if token in title_tokens else 1.0) * idf
         coverage = len(matched) / len(query_set)
-        normalized = weighted_score / max(len(query_set) * 3.5, 1.0)
-        score = min(1.0, normalized * (0.75 + 0.25 * coverage))
+        # Require more than a generic shared disease word when the crop is known.
+        crop_match = bool(query_crops & doc_crops) if query_crops else False
+        score = weighted_score * (0.12 + 0.88 * coverage) * crop_penalty
+        if query_crops and not crop_match:
+            score *= 0.35
         scored.append((score, doc))
     scored.sort(key=lambda item: (item[0], item[1]["id"]), reverse=True)
     return [{**doc, "score": round(score, 4), "retrieval_method": "lexical"} for score, doc in scored[:top_k]]
