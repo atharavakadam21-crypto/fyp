@@ -581,7 +581,7 @@ def retrieve_knowledge(query, top_k=3, provider=None, api_key=None):
         raise ValueError("top_k must be a positive integer")
 
     lexical = _retrieve_lexical(query, max(top_k, top_k * 2))
-    semantic_enabled = os.getenv("PLANTVISION_SEMANTIC_RETRIEVAL", "1").strip().lower() not in {"0", "false", "no", "off"}
+    semantic_enabled = os.getenv("PLANTVISION_SEMANTIC_RETRIEVAL", "0").strip().lower() not in {"0", "false", "no", "off"}
     if not semantic_enabled or not provider or not api_key:
         return lexical[:top_k]
 
