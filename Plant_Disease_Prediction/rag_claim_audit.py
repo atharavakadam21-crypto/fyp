@@ -175,6 +175,17 @@ def audit_report_claims(report, retrieved_docs):
             "evidence_quote": str(item.get("evidence_quote", "")),
             "reason": str(item.get("reason", "")),
         })
+    # Do not display a model-invented quote as evidence: verify each quote against
+    # the exact text of at least one source ID that the claim cites.
+    evidence_text_by_id = {item["id"]: item["text"] for item in evidence}
+    for claim in safe_claims:
+        quote = claim["evidence_quote"].strip()
+        if quote and not any(quote in evidence_text_by_id.get(source_id, "") for source_id in claim["source_ids"]):
+            claim["evidence_quote"] = ""
+            if claim["verdict"] == "supported":
+                claim["verdict"] = "partially_supported"
+            suffix = "The supplied evidence quote did not exactly match the cited passage, so it was removed."
+            claim["reason"] = (claim["reason"] + " " if claim["reason"] else "") + suffix
     counts = {key: sum(c["verdict"] == key for c in safe_claims) for key in allowed}
     return {
         "claims": safe_claims,
