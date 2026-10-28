@@ -131,20 +131,22 @@ class RetrievalKnowledgeTests(unittest.TestCase):
                     for text in texts
                 ]
             return [[1.0, 0.0]]
-        with patch("rag_embeddings.embed_texts", side_effect=fake_embed):
-            results = retrieve_knowledge(
-                "Potato late blight", top_k=3, provider="OpenAI", api_key="test-key"
-            )
+        with patch.dict("os.environ", {"PLANTVISION_SEMANTIC_RETRIEVAL": "1"}):
+            with patch("rag_embeddings.embed_texts", side_effect=fake_embed):
+                results = retrieve_knowledge(
+                    "Potato late blight", top_k=3, provider="OpenAI", api_key="test-key"
+                )
         self.assertTrue(results)
         self.assertEqual(results[0]["id"], "PV-POTATO-LATE-01")
         self.assertEqual(results[0]["retrieval_method"], "semantic")
         _EMBEDDING_CACHE.clear()
 
     def test_semantic_failure_uses_marked_lexical_fallback(self):
-        with patch("rag_embeddings.embed_texts", side_effect=RuntimeError("offline")):
-            results = retrieve_knowledge(
-                "Apple scab", top_k=1, provider="OpenAI", api_key="test-key"
-            )
+        with patch.dict("os.environ", {"PLANTVISION_SEMANTIC_RETRIEVAL": "1"}):
+            with patch("rag_embeddings.embed_texts", side_effect=RuntimeError("offline")):
+                results = retrieve_knowledge(
+                    "Apple scab", top_k=1, provider="OpenAI", api_key="test-key"
+                )
         self.assertEqual(results[0]["id"], "PV-APPLE-SCAB-01")
         self.assertEqual(results[0]["retrieval_method"], "lexical_fallback")
 
