@@ -571,24 +571,45 @@ def _retrieve_semantic(query, top_k, provider, api_key):
 
 
 def retrieve_knowledge(query, top_k=3, provider=None, api_key=None):
-    """Retrieve source-backed passages semantically when credentials are available.
+    """Retrieve source-backed passages with optional semantic + lexical rank fusion.
 
-    If embedding retrieval fails or returns no sufficiently similar passages, the
-    dependency-free lexical retriever is used. The result marks which method ran.
+    Set PLANTVISION_SEMANTIC_RETRIEVAL=0 to avoid embedding API calls and use
+    the deterministic lexical ranker only. Semantic failures fall back safely.
     """
+    import os
     if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
         raise ValueError("top_k must be a positive integer")
 
-    if provider and api_key:
-        try:
-            results = _retrieve_semantic(query, top_k, provider, api_key)
-            if results:
-                return results
-        except Exception:
-            # Keep the assistant usable during provider outages, but label fallback.
-            pass
-        return [
-            {**doc, "retrieval_method": "lexical_fallback"}
-            for doc in _retrieve_lexical(query, top_k)
-        ]
-    return _retrieve_lexical(query, top_k)
+    lexical = _retrieve_lexical(query, max(top_k, top_k * 2))
+    semantic_enabled = os.getenv("PLANTVISION_SEMANTIC_RETRIEVAL", "1").strip().lower() not in {"0", "false", "no", "off"}
+    if not semantic_enabled or not provider or not api_key:
+        return lexical[:top_k]
+
+    try:
+        semantic = _retrieve_semantic(query, max(top_k, top_k * 2), provider, api_key)
+        if not semantic:
+            return [{**doc, "retrieval_method": "lexical_fallback"} for doc in lexical[:top_k]]
+
+        # Reciprocal Rank Fusion combines independent lexical and semantic rankings
+        # without assuming their raw scores are calibrated to the same scale.
+        fused = {}
+        by_id = {}
+        for rank, doc in enumerate(lexical, start=1):
+            doc_id = doc["id"]
+            by_id[doc_id] = doc
+            fused[doc_id] = fused.get(doc_id, 0.0) + 1.0 / (60 + rank)
+        for rank, doc in enumerate(semantic, start=1):
+            doc_id = doc["id"]
+            by_id[doc_id] = doc
+            fused[doc_id] = fused.get(doc_id, 0.0) + 1.0 / (60 + rank)
+        ranked = sorted(fused, key=lambda doc_id: (fused[doc_id], doc_id), reverse=True)
+        results = []
+        for doc_id in ranked[:top_k]:
+            doc = dict(by_id[doc_id])
+            doc["score"] = round(fused[doc_id], 5)
+            doc["retrieval_method"] = "hybrid_rrf"
+            results.append(doc)
+        return results
+    except Exception:
+        # Keep the assistant usable when embeddings hit a quota or provider outage.
+        return [{**doc, "retrieval_method": "lexical_fallback"} for doc in lexical[:top_k]]
