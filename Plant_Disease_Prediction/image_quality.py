@@ -11,7 +11,8 @@ def assess_image_quality(image):
     """
     if image is None:
         raise ValueError("image is required")
-    gray = image.convert("L").resize((256, 256), Image.Resampling.BILINEAR)
+    resampling = getattr(Image, "Resampling", Image)
+    gray = image.convert("L").resize((256, 256), resampling.BILINEAR)
     pixels = np.asarray(gray, dtype=np.float32)
     brightness = float(np.mean(pixels))
     contrast = float(np.std(pixels))
