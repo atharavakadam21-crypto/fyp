@@ -17,6 +17,7 @@ from PIL import Image
 from rag_knowledge import retrieve_knowledge
 from rag_evaluation import validate_report
 from rag_claim_audit import test_gemini_connection, audit_report_claims
+from prediction_safety import assess_prediction, KNOWN_CLASS, LOW_CONFIDENCE, AMBIGUOUS_REVIEW
 
 
 # =========================================================
@@ -1269,11 +1270,8 @@ def disease_recognition():
         confidence = float(predictions[top_index])
         label = CLASS_NAMES[top_index]
 
-        status = (
-            "KNOWN CLASS"
-            if confidence >= threshold
-            else "UNKNOWN / LOW CONFIDENCE"
-        )
+        decision = assess_prediction(predictions, threshold=threshold)
+        status = decision["status"]
 
         st.session_state["prediction_result"] = {
             "label": label,
@@ -1309,7 +1307,7 @@ def disease_recognition():
         """
     )
 
-    badge = "KNOWN CLASS" if status == "KNOWN CLASS" else "LOW CONFIDENCE"
+    badge = status
 
     render_html(
         f"""
@@ -1325,10 +1323,23 @@ def disease_recognition():
         """
     )
 
-    if status != "KNOWN CLASS":
-        st.error(
-            "⚠️ Low confidence: this image may not closely match one of the model's trained classes."
+    if status == LOW_CONFIDENCE:
+        st.warning(
+            "⚠️ Low confidence: the image may not closely match a trained class. "
+            "Try a sharper, well-lit photo of one leaf."
         )
+    elif status == AMBIGUOUS_REVIEW:
+        st.warning(
+            "⚠️ Ambiguous prediction: the top two classes have similar scores. "
+            "Treat this result as uncertain and verify it with another image or an expert."
+        )
+
+    decision = assess_prediction(predictions, threshold=threshold)
+    st.metric(
+        "Top-two score gap",
+        f"{decision['margin'] * 100:.2f} percentage points",
+        help="Difference between the top prediction score and the runner-up. A small gap means the model is unsure which class fits best."
+    )
 
     render_html(
         """
@@ -1622,15 +1633,26 @@ def real_world_testing():
     top_index = int(indices[0])
     confidence = float(predictions[top_index])
     predicted_class = CLASS_NAMES[top_index]
+    decision = assess_prediction(predictions, threshold=DEFAULT_THRESHOLD)
 
     render_html(
         f"""
         <div class="result-card">
+        <div class="status-badge">{decision["status"]}</div>
         <div class="result-label">AI PREDICTION</div>
         <div class="result-disease">{pretty_name(predicted_class)}</div>
         <div class="result-confidence">{confidence * 100:.2f}%</div>
         </div>
         """
+    )
+
+    if decision["status"] == LOW_CONFIDENCE:
+        st.warning("Low confidence: verify this result before acting on it.")
+    elif decision["status"] == AMBIGUOUS_REVIEW:
+        st.warning("Ambiguous prediction: the leading classes are too close to call confidently.")
+    st.caption(
+        f"Top-two score gap: {decision['margin'] * 100:.2f} percentage points. "
+        "This is a model uncertainty signal, not a calibrated probability of correctness."
     )
 
     top_cols = st.columns(3)
