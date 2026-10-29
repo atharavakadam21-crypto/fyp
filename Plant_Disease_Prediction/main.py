@@ -1227,7 +1227,7 @@ def disease_recognition():
         st.image(
             image,
             caption="Uploaded Leaf",
-            use_container_width=True
+            use_column_width=True
         )
 
     with info_column:
@@ -1416,7 +1416,7 @@ def disease_recognition():
         ]
         for column, (caption, image_panel) in zip(explanation_cols, explanation_panels):
             with column:
-                st.image(image_panel, caption=caption, use_container_width=True)
+                st.image(image_panel, caption=caption, use_column_width=True)
 
         st.caption(
             "Highlighted regions show model sensitivity for the predicted class. "
@@ -1592,7 +1592,7 @@ def real_world_testing():
         st.image(
             image,
             caption="Real-World Test Image",
-            use_container_width=True
+            use_column_width=True
         )
 
     with result_col:
@@ -1689,7 +1689,7 @@ def real_world_testing():
         ]
         for column, (caption, key) in zip(explanation_cols, explanation_panels):
             with column:
-                st.image(explanation[key], caption=caption, use_container_width=True)
+                st.image(explanation[key], caption=caption, use_column_width=True)
         with st.expander("Grad-CAM diagnostics"):
             st.write({
                 "target_layer": explanation["layer_name"],
