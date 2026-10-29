@@ -6,7 +6,7 @@
 2. Ensure the model file is available to the deployed app. It is currently not tracked in this GitHub folder. Do not commit it if it exceeds GitHub's file-size limit; use Git LFS or model hosting instead.
 3. Open https://share.streamlit.io/ and connect the GitHub account that can access this repository.
 4. Create an app using repository `atharavakadam21-crypto/fyp`, branch `main`, and main file path `Plant_Disease_Prediction/main.py`.
-5. In Advanced settings, select Python 3.10 because TensorFlow 2.10 does not support newer Python runtimes such as Python 3.11.
+5. In Advanced settings, select Python 3.11. The deployment requirements use TensorFlow 2.15.1 and NumPy 1.26.4 to avoid the incompatible TensorFlow 2.10 / NumPy 1.24.3 pins from the previous setup.
 6. If AI guidance is needed, add the following under the app's Secrets settings (use your own key; never commit it):
    ```toml
    GEMINI_API_KEY = "your-key"
