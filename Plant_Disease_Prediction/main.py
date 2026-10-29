@@ -1850,14 +1850,14 @@ def analytics():
             st.metric("Flagged for Review", 0)
 
     if not history.empty:
-        render_html("<div class=\\"section-title\\">Prediction History</div>")
+        render_html('<div class="section-title">Prediction History</div>')
         st.dataframe(history, use_container_width=True)
         if "status" in history.columns:
             st.markdown("#### Prediction status distribution")
             st.bar_chart(history["status"].fillna("Unknown").value_counts())
 
     if not real_world.empty:
-        render_html("<div class=\\"section-title\\">Human-Verified Performance</div>")
+        render_html('<div class="section-title">Human-Verified Performance</div>')
         st.caption("Only results explicitly recorded as human-verified are included. Accuracy is meaningful only when labels are correct and the sample is representative.")
         st.dataframe(real_world, use_container_width=True)
         if {"actual_class", "correct_normalized"}.issubset(real_world.columns):
