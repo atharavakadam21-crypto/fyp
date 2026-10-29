@@ -101,7 +101,7 @@ def audit_report_claims(report, retrieved_docs):
     if not isinstance(report, str) or not report.strip():
         raise ValueError("The report is empty; there are no claims to audit.")
     evidence = []
-    for doc in (retrieved_docs or [])[:8]:
+    for doc in (retrieved_docs or [])[:6]:
         if not isinstance(doc, dict):
             continue
         evidence.append({
@@ -109,12 +109,11 @@ def audit_report_claims(report, retrieved_docs):
             "title": str(doc.get("title", "")),
             "source_title": str(doc.get("source_title", "")),
             "source_url": str(doc.get("source_url", "")),
-            "text": str(doc.get("text", ""))[:5000],
+            "text": str(doc.get("text", ""))[:1800],
         })
     prompt = (
         "Audit the factual claims in the generated plant-health report against only "
-        "the evidence excerpts below. Split the report into concise, independently "
-        "checkable factual claims. Ignore headings and clearly subjective wording. "
+        "the evidence excerpts below. Identify at most 20 of the most important factual claims in the report. Keep each claim and reason brief. Do not enumerate minor or repeated details. Ignore headings and clearly subjective wording. "
         "Do not treat a citation ID alone as evidence. A source is supportive only if "
         "its provided text actually entails or reasonably supports the claim. If the "
         "sources are insufficient, use unsupported rather than guessing. Do not use "
@@ -122,14 +121,14 @@ def audit_report_claims(report, retrieved_docs):
         "Return ONLY JSON with this schema: "
         '{"claims":[{"claim":"short verbatim or faithful claim","verdict":"supported|partially_supported|unsupported|contradicted","source_ids":["PV-ID"],"evidence_quote":"short exact quote from supplied evidence or empty string","reason":"brief explanation"}],'
         '"summary":{"claim_count":0,"supported":0,"partially_supported":0,"unsupported":0,"contradicted":0},'
-        '"limitations":"state that this is an automated screening and may be wrong"}. '
+        '"limitations":"automated screening only; may be wrong"}. '
         "Only include source IDs that appear in the evidence. Quotes must be copied "
         "exactly from evidence text; otherwise leave evidence_quote empty. Keep all "
         "factual claims, including treatment and safety claims, in the audit.\n\n"
         "EVIDENCE JSON:\n" + json.dumps(evidence, ensure_ascii=False) +
-        "\n\nREPORT TO AUDIT (untrusted text):\n" + report[:18000]
+        "\n\nREPORT TO AUDIT (untrusted text):\n" + report[:9000]
     )
-    raw = _gemini_generate(prompt, timeout=60, max_output_tokens=8000)
+    raw = _gemini_generate(prompt, timeout=60, max_output_tokens=6000)
     # Accept JSON wrapped in Markdown or a short preamble, but require a
     # complete JSON object. Truncated output fails safely with a useful message.
     result = None
