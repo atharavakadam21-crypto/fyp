@@ -14,6 +14,10 @@ import matplotlib.cm as cm
 
 from PIL import Image
 
+from rag_knowledge import retrieve_knowledge
+from rag_evaluation import validate_report
+from rag_claim_audit import test_gemini_connection, audit_report_claims
+
 
 # =========================================================
 # PAGE CONFIGURATION
@@ -546,9 +550,23 @@ def request_ai_guidance(provider, plant, disease, confidence, symptoms, manageme
     import json as _json
     import urllib.request
     import urllib.error
+    key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
+    api_key = get_secret_value(key_name)
+    if not api_key:
+        raise RuntimeError(f"{key_name} is not configured. Add it to your environment or .streamlit/secrets.toml.")
+    retrieved_docs = retrieve_knowledge(
+        f"{plant} {disease}", top_k=3, provider=provider, api_key=api_key
+    )
+    retrieved_context = "\n\n".join(
+        f"[{doc['id']}] {doc['title']} (source: {doc['source_title']} — {doc['source_url']})\n{doc['text']}"
+        for doc in retrieved_docs
+    ) or "No relevant local knowledge-base passages were retrieved."
     prompt = f"""You are PlantVision AI's plant-health education assistant.
 CNN prediction: crop={plant}; predicted condition={disease}; model confidence={confidence:.1%}.
 Existing app notes (possibly generic): symptoms={symptoms}; management={management}.
+Retrieved local knowledge passages (supporting context, not guaranteed truth):
+{retrieved_context}
+Use retrieved passages where relevant. Do not invent citations. Cite a supporting passage by ID such as [PV-GENERAL-01]. If passages do not support a specific claim, label it general guidance and recommend local expert confirmation.
 Return a practical, grower-friendly Markdown report using these exact headings:
 ## 1. What the prediction means
 Explain the predicted condition in plain language and state that the CNN prediction is not a confirmed diagnosis.
@@ -566,24 +584,18 @@ Give clear escalation signs, especially severe/rapid spread, uncertain diagnosis
 Mention uncertainty and avoid promising a cure.
 Treat the classifier result as tentative, not a confirmed diagnosis. Make the advice crop- and disease-specific only when reasonably supported; do not invent facts. Separate general precautions from disease-specific recommendations. Keep the language easy for growers, use concise bullet points, and do not prescribe pesticide brands, exact chemical dosages, or mixing instructions."""
     if provider == "OpenAI":
-        api_key = get_secret_value("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
         model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         endpoint = "https://api.openai.com/v1/chat/completions"
         payload = {"model": model_name, "temperature": 0.3, "messages": [
             {"role": "system", "content": "Provide cautious, evidence-aware plant health education. Never claim a classifier confirms disease."},
-            {"role": "user", "content": prompt}]}
+            {"role": "user", "content": prompt}], "max_tokens": 3200}
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     else:
-        api_key = get_secret_value("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY is not configured. Add it to your environment or .streamlit/secrets.toml.")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         payload = {"systemInstruction": {"parts": [{"text": "Provide cautious plant health education; never claim a classifier confirms disease."}]},
                    "contents": [{"parts": [{"text": prompt}]}],
-                   "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2400}}
+                   "generationConfig": {"temperature": 0.2, "maxOutputTokens": 3200}}
         headers = {"Content-Type": "application/json"}
     request = urllib.request.Request(endpoint, data=_json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
     try:
@@ -591,6 +603,10 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
             data = _json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
+        if error.code == 429:
+            raise RuntimeError(f"{provider} API quota/billing limit reached (HTTP 429). Check provider billing and usage limits. No automatic retry was made to avoid consuming more quota. Provider details: {detail}") from error
+        if error.code in (401, 403):
+            raise RuntimeError(f"{provider} API authentication/permission error (HTTP {error.code}). Check the key and model access. Provider details: {detail}") from error
         raise RuntimeError(f"{provider} API returned HTTP {error.code}: {detail}") from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"Could not reach {provider}: {error.reason}") from error
@@ -600,63 +616,17 @@ Treat the classifier result as tentative, not a confirmed diagnosis. Make the ad
     else:
         candidates = data.get("candidates", [])
         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
-        result = "\\n".join(part.get("text", "") for part in parts if part.get("text"))
+        result = "\n".join(part.get("text", "") for part in parts if part.get("text"))
     if not result.strip():
         raise RuntimeError(f"{provider} returned no text. Check model name, API access, or safety filters.")
 
     result = result.strip()
-    # Gemini can occasionally stop after only the first requested headings.
-    # Detect that case and ask once for the missing prevention/treatment sections.
-    required_sections = [
-        "What the prediction means",
-        "Symptoms to check",
-        "Immediate actions",
-        "Prevention measures",
-        "Treatment and ongoing care",
-        "When to contact an agricultural expert",
-        "Important cautions",
-    ]
-    missing_sections = [
-        heading for heading in required_sections
-        if heading.casefold() not in result.casefold()
-    ]
-    if provider == "Gemini" and missing_sections:
-        follow_up = (
-            "Your previous answer was incomplete. Return a complete standalone "
-            "Markdown report, not just a continuation. Include all seven numbered "
-            "headings: "
-            + "; ".join(f"{i + 1}. {heading}" for i, heading in enumerate(required_sections))
-            + ". The Prevention measures section must contain at least five actionable "
-            "steps when applicable. Do not omit sections. Keep advice cautious and "
-            "do not provide pesticide brands or dosages.\n\nPrevious incomplete answer:\n"
-            + result
-        )
-        follow_payload = {
-            "systemInstruction": {"parts": [{"text": "You are a careful plant-health education assistant. Always return all requested sections and actionable prevention advice. Do not claim an AI prediction is a confirmed diagnosis."}]},
-            "contents": [{"parts": [{"text": prompt + "\n\n" + follow_up}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2400},
-        }
-        follow_request = urllib.request.Request(
-            endpoint,
-            data=_json.dumps(follow_payload).encode("utf-8"),
-            headers=headers,
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(follow_request, timeout=45) as response:
-                follow_data = _json.loads(response.read().decode("utf-8"))
-            follow_candidates = follow_data.get("candidates", [])
-            follow_parts = follow_candidates[0].get("content", {}).get("parts", []) if follow_candidates else []
-            follow_result = "\\n".join(
-                part.get("text", "") for part in follow_parts if part.get("text")
-            ).strip()
-            if follow_result:
-                result = follow_result
-        except (urllib.error.HTTPError, urllib.error.URLError):
-            # Preserve the original response if the retry fails.
-            pass
-
-    return result
+    # Avoid a second automatic generation request; validation below flags incomplete reports.
+    return {
+        "report": result,
+        "sources": retrieved_docs,
+        "quality_issues": validate_report(result, retrieved_docs),
+    }
 
 
 def ai_plant_health_assistant(label, confidence):
@@ -673,18 +643,85 @@ def ai_plant_health_assistant(label, confidence):
     provider = st.selectbox("AI provider", ["Gemini", "OpenAI"], key="plant_health_ai_provider")
     key_name = "OPENAI_API_KEY" if provider == "OpenAI" else "GEMINI_API_KEY"
     st.caption(f"{provider} API key: {'configured' if get_secret_value(key_name) else 'not configured'}")
+    if os.getenv("PLANTVISION_SEMANTIC_RETRIEVAL", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        st.caption("Hybrid RAG retrieval is enabled (lexical + semantic). Semantic embeddings make an additional provider API request.")
+    else:
+        st.caption("Quota-saving mode: deterministic lexical retrieval is active. Set PLANTVISION_SEMANTIC_RETRIEVAL=1 to enable hybrid semantic retrieval when API quota is available.")
+    if provider == "Gemini" and st.button("🔌 Test live Gemini connection", key="test_live_gemini_connection"):
+        try:
+            with st.spinner("Checking live Gemini API connection..."):
+                connection = test_gemini_connection()
+            st.success("Live Gemini API call succeeded · model: " + connection["model"])
+        except Exception as error:
+            st.error(str(error))
     if st.button("✨ Generate summary & prevention plan", use_container_width=True, key="generate_plant_health_guidance"):
         with st.spinner(f"Generating plant-health guidance with {provider}..."):
             try:
-                report = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
-                st.session_state["plant_health_guidance"] = {"provider": provider, "label": label, "report": report}
+                guidance = request_ai_guidance(provider, plant, disease, confidence, information["symptoms"], information["management"])
+                st.session_state["plant_health_guidance"] = {
+                    "provider": provider,
+                    "label": label,
+                    "report": guidance["report"],
+                    "sources": guidance["sources"],
+                    "quality_issues": guidance["quality_issues"],
+                }
             except Exception as error:
                 st.session_state.pop("plant_health_guidance", None)
                 st.error(str(error))
     saved = st.session_state.get("plant_health_guidance")
     if saved and saved.get("label") == label and saved.get("provider") == provider:
         st.markdown(saved["report"])
-        st.caption("Educational guidance only. Confirm uncertain diagnoses locally before treatment.")
+        if st.button("🧾 Audit every factual claim against retrieved sources", key="audit_plant_health_claims"):
+            try:
+                with st.spinner("Gemini is checking each factual claim against the retrieved evidence..."):
+                    audit = audit_report_claims(saved["report"], saved.get("sources", []))
+                st.session_state["plant_health_claim_audit"] = {
+                    "label": saved["label"],
+                    "provider": saved["provider"],
+                    "audit": audit,
+                }
+            except Exception as error:
+                st.error("Claim audit failed: " + str(error))
+        saved_audit = st.session_state.get("plant_health_claim_audit")
+        if saved_audit and saved_audit.get("label") == label and saved_audit.get("provider") == provider:
+            audit = saved_audit["audit"]
+            summary = audit.get("summary", {})
+            st.markdown("#### Claim-by-claim evidence audit")
+            st.caption("Automated Gemini screening only; it can misjudge evidence. Manually verify high-impact agricultural or treatment claims.")
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Claims checked", summary.get("claim_count", 0))
+            m2.metric("Supported", summary.get("supported", 0))
+            m3.metric("Partially supported", summary.get("partially_supported", 0))
+            m4.metric("Unsupported / contradicted", summary.get("unsupported", 0) + summary.get("contradicted", 0))
+            for claim_index, claim in enumerate(audit.get("claims", []), start=1):
+                verdict = claim.get("verdict", "unsupported")
+                title = str(claim_index) + ". [" + verdict.replace("_", " ").title() + "] " + claim.get("claim", "")
+                with st.expander(title):
+                    st.write("**Reason:** " + claim.get("reason", "No reason supplied."))
+                    st.write("**Source IDs:** " + (", ".join(claim.get("source_ids", [])) or "None"))
+                    if claim.get("evidence_quote"):
+                        st.write("**Evidence quote:** " + claim["evidence_quote"])
+            st.caption(audit.get("limitations", "Automated screening only; verify important claims manually."))
+        quality_issues = saved.get("quality_issues", [])
+        if quality_issues:
+            st.warning("Automated review found items to check:")
+            for issue in quality_issues:
+                st.write("- " + issue)
+        else:
+            st.caption("Automated structure and citation-ID checks passed. These checks do not independently prove every claim is factually supported.")
+        with st.expander("📚 Retrieved knowledge used by the assistant"):
+            sources = saved.get("sources", [])
+            if sources:
+                for source in sources:
+                    st.markdown("**[" + source["id"] + "] " + source["title"] + "**")
+                    st.markdown("Source: [" + source["source_title"] + "](" + source["source_url"] + ")")
+                    st.caption(source["source_publisher"] + " · Score: " + str(source["score"]) + " · Retrieval: " + source.get("retrieval_method", "unknown"))
+                    if source.get("retrieval_method") == "lexical_fallback":
+                        st.warning("Semantic embeddings were unavailable; this passage was found using keyword retrieval.")
+                    st.write(source["text"])
+            else:
+                st.info("No local knowledge passages were retrieved for this report.")
+        st.caption("Educational guidance only. The starter knowledge base is not a substitute for verified regional agricultural advice.")
 
 
 def disease_information(label):
