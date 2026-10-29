@@ -3,6 +3,7 @@ import csv
 import json
 import base64
 import re
+import hashlib
 from datetime import datetime
 
 import numpy as np
@@ -1210,6 +1211,16 @@ def disease_recognition():
         label_visibility="collapsed"
     )
 
+    # Clear stale predictions whenever the uploaded image changes.
+    image_signature = (
+        hashlib.sha256(uploaded.getvalue()).hexdigest()
+        if uploaded is not None else None
+    )
+    previous_signature = st.session_state.get("prediction_image_signature")
+    if image_signature != previous_signature:
+        st.session_state.pop("prediction_result", None)
+        st.session_state["prediction_image_signature"] = image_signature
+
     threshold = st.slider(
         "Confidence threshold",
         min_value=0.30,
@@ -1334,7 +1345,13 @@ def disease_recognition():
     confidence = result["confidence"]
     predictions = result["predictions"]
     indices = result["indices"]
-    status = result["status"]
+    # Re-evaluate the review status when either threshold slider changes.
+    decision = assess_prediction(
+        predictions,
+        threshold=threshold,
+        min_margin=margin_threshold,
+    )
+    status = decision["status"]
 
     plant, disease = split_label(label)
 
@@ -1371,7 +1388,6 @@ def disease_recognition():
             "Treat this result as uncertain and verify it with another image or an expert."
         )
 
-    decision = assess_prediction(predictions, threshold=threshold)
     st.metric(
         "Top-two score gap",
         f"{decision['margin'] * 100:.2f} percentage points",
