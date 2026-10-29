@@ -123,8 +123,7 @@ def audit_report_claims(report, retrieved_docs):
         '"summary":{"claim_count":0,"supported":0,"partially_supported":0,"unsupported":0,"contradicted":0},'
         '"limitations":"automated screening only; may be wrong"}. '
         "Only include source IDs that appear in the evidence. Quotes must be copied "
-        "exactly from evidence text; otherwise leave evidence_quote empty. Keep all "
-        "factual claims, including treatment and safety claims, in the audit.\n\n"
+        "exactly from evidence text; otherwise leave evidence_quote empty. Prioritize diagnosis, treatment, safety, and other consequential claims. Return no more than 20 claims.\n\n"
         "EVIDENCE JSON:\n" + json.dumps(evidence, ensure_ascii=False) +
         "\n\nREPORT TO AUDIT (untrusted text):\n" + report[:9000]
     )
