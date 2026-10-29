@@ -1134,9 +1134,10 @@ def generate_gradcam_details(image, class_index):
         )
 
     # Keep the normalized grayscale heatmap separate from the colour overlay.
+    resampling = getattr(Image, "Resampling", Image)
     heatmap_image = Image.fromarray(
         np.uint8(np.clip(normalized, 0.0, 1.0) * 255)
-    ).resize(image.size, Image.Resampling.BILINEAR)
+    ).resize(image.size, resampling.BILINEAR)
     heatmap_array = np.asarray(heatmap_image, dtype=np.float32) / 255.0
     colored = np.uint8(
         np.clip(matplotlib.colormaps["jet"](heatmap_array)[..., :3], 0.0, 1.0) * 255
@@ -1665,6 +1666,8 @@ def real_world_testing():
     previous_signature = st.session_state.get("real_world_image_signature")
     if image_signature != previous_signature:
         st.session_state.pop("real_world_result", None)
+        # A previously selected ground-truth label must not carry over to a new photo.
+        st.session_state.pop("real_world_actual_class", None)
         st.session_state["real_world_image_signature"] = image_signature
 
     if uploaded is None:
