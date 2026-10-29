@@ -607,6 +607,13 @@ def predict_image(image):
             "Model outputs are not probabilities in [0, 1]; verify the final "
             "classification layer before displaying confidence."
         )
+    probability_sum = float(np.sum(probabilities))
+    if not np.isclose(probability_sum, 1.0, rtol=0.0, atol=0.02):
+        raise RuntimeError(
+            f"Model scores sum to {probability_sum:.4f}, not approximately 1.0. "
+            "The app cannot safely label these values as class probabilities; "
+            "verify the model's final activation and preprocessing."
+        )
 
     indices = np.argsort(probabilities)[::-1][:3]
     return probabilities, indices
