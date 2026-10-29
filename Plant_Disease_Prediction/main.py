@@ -1650,6 +1650,16 @@ def real_world_testing():
         key="real_world_uploader"
     )
 
+    # Do not keep showing a previous photo's prediction after the upload changes.
+    image_signature = (
+        hashlib.sha256(uploaded.getvalue()).hexdigest()
+        if uploaded is not None else None
+    )
+    previous_signature = st.session_state.get("real_world_image_signature")
+    if image_signature != previous_signature:
+        st.session_state.pop("real_world_result", None)
+        st.session_state["real_world_image_signature"] = image_signature
+
     if uploaded is None:
         return
 
@@ -1766,7 +1776,8 @@ def real_world_testing():
             st.warning("Incorrect prediction recorded. This sample is useful for error analysis.")
 
     try:
-        explanation = generate_gradcam_details(image, top_index)
+        # Explain the exact image associated with the stored prediction.
+        explanation = generate_gradcam_details(result["image"], top_index)
         st.caption(
             f"Grad-CAM uses {explanation['layer_name']} "
             f"(feature map {explanation['feature_shape']}). "
