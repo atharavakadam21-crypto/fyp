@@ -514,10 +514,23 @@ try:
     model = load_model()
 except Exception as error:
     MODEL_LOAD_ERROR = str(error)
+    try:
+        _keras_version = getattr(tf.keras, "__version__", "unknown")
+    except Exception:
+        _keras_version = "unknown"
+    try:
+        _model_bytes = os.path.getsize(MODEL_PATH) if os.path.isfile(MODEL_PATH) else 0
+    except Exception:
+        _model_bytes = 0
     st.error(
         "The trained CNN could not be loaded or does not match the expected "
         f"PlantVision input/output contract. No simulated predictions will be used. "
         f"Details: {MODEL_LOAD_ERROR}"
+    )
+    st.caption(
+        f"Diagnostics: TensorFlow={tf.__version__}; Keras={_keras_version}; "
+        f"model_path={MODEL_PATH}; model_size_bytes={_model_bytes}; "
+        f"model_version={MODEL_VERSION}"
     )
 
 
