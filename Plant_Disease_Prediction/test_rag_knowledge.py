@@ -77,6 +77,31 @@ class RetrievalKnowledgeTests(unittest.TestCase):
         self.assertTrue(results)
         self.assertEqual(results[0]["id"], "PV-GRAPE-ESCA-01")
 
+    def test_advanced_differential_diagnosis_guidance_retrieves(self):
+        results = retrieve_knowledge(
+            "diagnose plant problem compare biological and environmental causes",
+            top_k=3,
+        )
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-DIAG-DIFFERENTIAL-01")
+
+    def test_india_specific_maharashtra_surveillance_retrieves(self):
+        results = retrieve_knowledge(
+            "Maharashtra CROPSAP horticultural pest surveillance advisory",
+            top_k=3,
+        )
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-INDIA-MAHARASHTRA-SURVEILLANCE-01")
+
+    def test_treatment_safety_guidance_retrieves_without_dosage(self):
+        results = retrieve_knowledge(
+            "safe pesticide use product label crop protection dosage",
+            top_k=3,
+        )
+        self.assertTrue(results)
+        self.assertEqual(results[0]["id"], "PV-TREATMENT-SAFETY-01")
+        self.assertIn("does not provide pesticide dosage", results[0]["text"])
+
     def test_every_document_has_source_metadata(self):
         for doc in KNOWLEDGE_DOCUMENTS:
             with self.subTest(document=doc["id"]):
