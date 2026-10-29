@@ -1133,10 +1133,14 @@ def generate_gradcam_details(image, class_index):
             "Grad-CAM returned an empty/non-finite map for this class."
         )
 
-    # Keep the normalized grayscale heatmap separate from the colour overlay.
+    # Improve visibility for display only: low positive activations can otherwise
+    # look nearly black. Keep raw normalized values for all diagnostics.
+    display_map = np.power(np.clip(normalized, 0.0, 1.0), 0.60)
+
+    # Resize the activation map smoothly; the underlying feature map remains coarse.
     resampling = getattr(Image, "Resampling", Image)
     heatmap_image = Image.fromarray(
-        np.uint8(np.clip(normalized, 0.0, 1.0) * 255)
+        np.uint8(display_map * 255)
     ).resize(image.size, resampling.BILINEAR)
     heatmap_array = np.asarray(heatmap_image, dtype=np.float32) / 255.0
     colored = np.uint8(
@@ -1144,7 +1148,7 @@ def generate_gradcam_details(image, class_index):
     )
     original_image = image.convert("RGB")
     colored_heatmap = Image.fromarray(colored).convert("RGB")
-    overlay = Image.blend(original_image, colored_heatmap, alpha=0.35)
+    overlay = Image.blend(original_image, colored_heatmap, alpha=0.30)
 
     return {
         "original": original_image,
@@ -1791,6 +1795,7 @@ def real_world_testing():
         st.caption(
             f"Grad-CAM uses {explanation['layer_name']} "
             f"(feature map {explanation['feature_shape']}). "
+            "Display contrast is enhanced for visibility; the underlying feature map is coarse. "
             "Highlighted regions indicate model sensitivity, not a confirmed lesion."
         )
         explanation_cols = st.columns(3)
