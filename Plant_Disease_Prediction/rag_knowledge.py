@@ -540,8 +540,7 @@ KNOWLEDGE_DOCUMENTS = [
             "Open the original resource to check its scope, date and geographic relevance. "
             "This directory does not replace current state agricultural university or extension advice."
         ),
-    }
-
+    },
     {
         "id": "PV-DIAG-DIFFERENTIAL-01",
         "title": "Plant problem diagnosis: compare biological and environmental causes",
