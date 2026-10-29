@@ -1216,7 +1216,16 @@ def disease_recognition():
         min_value=0.30,
         max_value=0.90,
         value=DEFAULT_THRESHOLD,
-        step=0.05
+        step=0.05,
+        help="Predictions below this top-class score are flagged for review."
+    )
+    margin_threshold = st.slider(
+        "Ambiguity margin threshold",
+        min_value=0.02,
+        max_value=0.25,
+        value=0.10,
+        step=0.01,
+        help="If the top two class scores differ by less than this amount, the result is flagged as ambiguous."
     )
 
     if uploaded is None:
@@ -1299,7 +1308,7 @@ def disease_recognition():
         confidence = float(predictions[top_index])
         label = CLASS_NAMES[top_index]
 
-        decision = assess_prediction(predictions, threshold=threshold)
+        decision = assess_prediction(predictions, threshold=threshold, min_margin=margin_threshold)
         status = decision["status"]
 
         st.session_state["prediction_result"] = {
