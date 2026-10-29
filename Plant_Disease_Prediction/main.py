@@ -38,11 +38,21 @@ st.set_page_config(
 # CONFIGURATION
 # =========================================================
 
-MODEL_PATH = os.getenv("PLANTVISION_MODEL_PATH", "trained_plant_disease_model.keras")
-MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
-BACKGROUND_PATH = "home_page.jpeg"
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DATA_DIR = "data"
+_configured_model_path = os.getenv(
+    "PLANTVISION_MODEL_PATH",
+    os.path.join(APP_DIR, "trained_plant_disease_model.keras"),
+)
+MODEL_PATH = (
+    _configured_model_path
+    if os.path.isabs(_configured_model_path)
+    else os.path.join(APP_DIR, _configured_model_path)
+)
+MODEL_VERSION = os.getenv("PLANTVISION_MODEL_VERSION", "production")
+BACKGROUND_PATH = os.path.join(APP_DIR, "home_page.jpeg")
+
+DATA_DIR = os.path.join(APP_DIR, "data")
 HISTORY_FILE = os.path.join(
     DATA_DIR,
     "prediction_history.csv"
