@@ -262,6 +262,143 @@ def inject_css():
     [data-testid="stMetricLabel"] {{ color:#9bbda8 !important; }}
     [data-testid="stMetricValue"] {{ color:#effff5 !important; }}
     hr {{ border-color:rgba(104,240,170,.12) !important; }}
+
+    /* =====================================================
+       SIGNATURE VISUAL LAYER — editorial, cinematic, alive
+       ===================================================== */
+    .stApp {
+        background-color: #03110b;
+        background-image:
+            radial-gradient(ellipse at 70% -8%, rgba(55,245,153,.19), transparent 34%),
+            radial-gradient(ellipse at 4% 42%, rgba(17,129,83,.15), transparent 30%),
+            radial-gradient(ellipse at 95% 92%, rgba(115,255,186,.09), transparent 27%),
+            linear-gradient(145deg, #020b07 0%, #062016 48%, #03130c 100%);
+        background-attachment: fixed;
+    }
+    [data-testid="stAppViewContainer"]::before {
+        content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
+        background-image:linear-gradient(rgba(135,255,190,.055) 1px, transparent 1px),
+                         linear-gradient(90deg, rgba(135,255,190,.055) 1px, transparent 1px);
+        background-size:54px 54px;
+        mask-image:linear-gradient(to bottom, black, transparent 82%);
+    }
+    .main .block-container { position:relative; z-index:1; }
+    .hero, .hero-card {
+        isolation:isolate;
+        border:1px solid rgba(143,255,194,.27);
+        background:
+            radial-gradient(ellipse at 88% 18%, rgba(72,255,164,.19), transparent 31%),
+            linear-gradient(118deg, rgba(15,67,42,.94), rgba(3,21,13,.94) 72%);
+        box-shadow:0 24px 80px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.055);
+    }
+    .hero:before, .hero-card:before {
+        content:""; position:absolute; z-index:-1; width:240px; height:240px; right:5%; bottom:-155px;
+        border:1px solid rgba(104,240,170,.16); border-radius:50%;
+        box-shadow:0 0 0 24px rgba(104,240,170,.025),0 0 0 50px rgba(104,240,170,.02),0 0 80px rgba(104,240,170,.08);
+        pointer-events:none;
+    }
+    .hero-title {
+        background:linear-gradient(100deg,#ffffff 5%,#c8ffdf 56%,#70f5ad 100%);
+        -webkit-background-clip:text; background-clip:text; color:transparent;
+        text-shadow:none; max-width:1000px;
+    }
+    .hero-title span {
+        color:#74ffb2;
+        background:linear-gradient(95deg,#a1ffca,#37e88c 65%,#d0ffe3);
+        -webkit-background-clip:text; background-clip:text;
+        text-shadow:0 0 34px rgba(75,255,158,.19);
+    }
+    .hero-eyebrow:before, .hero-tag:before {
+        content:""; width:23px; height:1px; display:inline-block; background:#72ffb1;
+        box-shadow:0 0 12px rgba(104,240,170,.75);
+    }
+    .metric-card, .metric-grid-card {
+        position:relative; overflow:hidden;
+        background:linear-gradient(145deg,rgba(14,55,35,.94),rgba(4,24,15,.94));
+        border-color:rgba(135,255,186,.20);
+    }
+    .metric-card:after, .metric-grid-card:after {
+        content:""; position:absolute; right:-34px; top:-42px; width:110px; height:110px;
+        border-radius:50%; background:radial-gradient(circle,rgba(92,255,166,.12),transparent 70%);
+        pointer-events:none; transition:transform .35s ease;
+    }
+    .metric-card:hover:after, .metric-grid-card:hover:after { transform:scale(1.45); }
+    .glass-card, .result-card, .upload-card {
+        position:relative;
+        border-color:rgba(135,255,186,.17);
+        box-shadow:0 18px 45px rgba(0,0,0,.17), inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    .glass-card:focus-within, .upload-card:focus-within {
+        border-color:rgba(104,240,170,.48); box-shadow:0 0 0 3px rgba(104,240,170,.055),0 18px 45px rgba(0,0,0,.18);
+    }
+    .result-card {
+        background:
+            radial-gradient(ellipse at 100% 0%,rgba(98,255,172,.16),transparent 44%),
+            linear-gradient(120deg,rgba(17,75,47,.96),rgba(4,26,16,.96));
+    }
+    .result-confidence { text-shadow:0 0 28px rgba(104,240,170,.20); }
+    .section-title { margin-top:38px; }
+    .section-title:before { width:5px; height:25px; margin-right:13px; }
+    [data-testid="stSidebar"] {
+        background:
+            radial-gradient(ellipse at 0% 0%,rgba(48,180,110,.12),transparent 40%),
+            linear-gradient(180deg,#020d08 0%,#041b11 100%) !important;
+        box-shadow:8px 0 36px rgba(0,0,0,.12);
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label {
+        position:relative; overflow:hidden; border-color:rgba(104,240,170,.075);
+        background:rgba(10,39,26,.37);
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+        border-color:rgba(104,240,170,.45);
+        background:linear-gradient(100deg,rgba(40,151,91,.29),rgba(13,59,36,.64));
+        box-shadow:inset 3px 0 0 #68f0aa,0 7px 22px rgba(0,0,0,.12);
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {
+        color:#e6fff0 !important; font-weight:800;
+    }
+    .brand-logo { width:52px; height:52px; flex-basis:52px; }
+    .brand { font-size:24px; letter-spacing:-1.2px; }
+    .brand-sub { letter-spacing:1.55px; }
+    div.stButton > button {
+        position:relative; overflow:hidden;
+        background:linear-gradient(110deg,#1a7048,#0c3e29 55%,#135d3a) !important;
+        box-shadow:0 8px 24px rgba(9,99,55,.19),inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    div.stButton > button:before {
+        content:""; position:absolute; inset:0; transform:translateX(-120%);
+        background:linear-gradient(110deg,transparent,rgba(255,255,255,.12),transparent);
+        transition:transform .55s ease;
+    }
+    div.stButton > button:hover:before { transform:translateX(120%); }
+    [data-testid="stFileUploader"] {
+        background:
+            radial-gradient(ellipse at 50% 0%,rgba(104,240,170,.09),transparent 65%),
+            rgba(5,28,18,.72);
+        border-width:1px; border-color:rgba(104,240,170,.28);
+        transition:background .25s ease,border-color .25s ease,transform .25s ease;
+    }
+    [data-testid="stFileUploader"]:hover {
+        transform:translateY(-2px); background-color:rgba(12,54,34,.78);
+        box-shadow:0 12px 34px rgba(0,0,0,.16);
+    }
+    [data-testid="stMetric"] {
+        background:linear-gradient(145deg,rgba(13,50,32,.76),rgba(4,23,15,.76));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    [data-testid="stDataFrame"], [data-testid="stTable"] { box-shadow:0 14px 38px rgba(0,0,0,.14); }
+    .sidebar-model {
+        background:linear-gradient(135deg,rgba(14,65,40,.75),rgba(5,27,17,.8));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .brand-logo { animation:pv-logo-breathe 5s ease-in-out infinite; }
+        @keyframes pv-logo-breathe {
+            0%,100% { filter:drop-shadow(0 0 7px rgba(104,240,170,.10)); }
+            50% { filter:drop-shadow(0 0 17px rgba(104,240,170,.34)); }
+        }
+    }
+
     @media (max-width: 760px) {{
         .main .block-container {{ padding:1rem .8rem 2rem; }}
         .hero,.hero-card {{ padding:24px 20px; border-radius:19px; }}
