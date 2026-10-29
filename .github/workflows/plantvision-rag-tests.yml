@@ -22,6 +22,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip numpy pillow
+
       - name: Compile Python files
         working-directory: Plant_Disease_Prediction
         run: python -m py_compile main.py rag_knowledge.py rag_embeddings.py rag_evaluation.py rag_claim_audit.py prediction_safety.py image_quality.py test_prediction_safety.py test_image_quality.py test_rag_knowledge.py test_rag_quality.py
