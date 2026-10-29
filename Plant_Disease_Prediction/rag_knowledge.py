@@ -541,6 +541,156 @@ KNOWLEDGE_DOCUMENTS = [
             "This directory does not replace current state agricultural university or extension advice."
         ),
     }
+
+    {
+        "id": "PV-DIAG-DIFFERENTIAL-01",
+        "title": "Plant problem diagnosis: compare biological and environmental causes",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Diagnosing the Causes of Unhealthy Plants",
+        "source_url": "https://ipm.ucanr.edu/agriculture/floriculture-and-ornamental-nurseries/diagnosing-the-causess-of-unhealthy-plants/",
+        "source_publisher": "University of California Statewide Integrated Pest Management Program",
+        "text": (
+            "A reliable plant-health assessment compares living causes (fungi, bacteria, "
+            "viruses, insects, mites and nematodes) with nonliving causes such as heat or cold, "
+            "water stress, poor drainage, nutrient imbalance, salinity, chemical injury and "
+            "mechanical damage. Record which plant parts are affected, whether symptoms appear "
+            "on one plant or many, their distribution in the field, the age of affected leaves, "
+            "recent weather and recent irrigation, fertilizer or spray changes. Look for direct "
+            "signs such as insects, webbing, fungal growth or bacterial ooze, not symptoms alone. "
+            "More than one cause can occur at once. An image prediction is a hypothesis, not a "
+            "confirmed diagnosis; use a local diagnostic service when the result will guide costly "
+            "or high-impact treatment."
+        ),
+    },
+    {
+        "id": "PV-ABIOTIC-STRESS-01",
+        "title": "Yellow leaves, spots and wilting: check abiotic stress and root health",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Nutrient Disorders",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/nutrient-disorders/",
+        "source_publisher": "University of California Statewide Integrated Pest Management Program",
+        "text": (
+            "Yellowing, leaf-edge burn, spotting, distortion, stunting and dieback are not "
+            "specific to infectious disease. Potential causes include overwatering or drought, "
+            "poor drainage and damaged roots, unsuitable soil pH, salinity, nutrient deficiency "
+            "or excess, temperature extremes and chemical injury. Nutrients can be present in "
+            "soil but unavailable to roots because of pH or root-zone problems; excess of one "
+            "nutrient can also interfere with another. Compare old and new leaves, check soil "
+            "moisture and drainage, review recent fertilizer or spray use, and consider soil or "
+            "plant-tissue testing before adding fertilizer. Do not diagnose a nutrient deficiency "
+            "from leaf color alone or prescribe fertilizer amounts from an image."
+        ),
+    },
+    {
+        "id": "PV-IPM-FOUNDATIONS-01",
+        "title": "Integrated pest management for Indian crops",
+        "source": "ICAR-National Research Institute for Integrated Pest Management",
+        "source_title": "Technical Bulletins",
+        "source_url": "https://nriipm.res.in/technical-bulletins.aspx",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), NRIIPM",
+        "text": (
+            "Integrated pest management (IPM) combines field monitoring, correct identification, "
+            "prevention, cultural practices, conservation of beneficial organisms and carefully "
+            "selected controls when justified. ICAR-NRIIPM lists technical resources for crops "
+            "including cotton, basmati rice, mustard and horticultural crops, as well as pest "
+            "surveillance and IPM strategies. The suitable approach depends on crop, growth stage, "
+            "region, season and confirmed pest or disease. Prefer current crop- and location-specific "
+            "recommendations over a generic answer. This directory summary is not a current pest "
+            "alert and does not establish a treatment threshold for a particular field."
+        ),
+    },
+    {
+        "id": "PV-DISEASE-SANITATION-01",
+        "title": "Disease prevention through scouting, sanitation and moisture management",
+        "source": "University of Minnesota Extension",
+        "source_title": "Managing plant diseases in the home garden",
+        "source_url": "https://extension.umn.edu/garden-and-home/yard-and-garden/yard-and-garden-problems/managing-plant-diseases-in-the-home-garden",
+        "source_publisher": "University of Minnesota Extension",
+        "text": (
+            "Scout crops regularly and note whether symptoms are new, stable or spreading. "
+            "Many fungal and bacterial problems are favored by prolonged leaf wetness and can "
+            "spread through splashing water or handling wet plants. Where appropriate, water near "
+            "the root zone, allow foliage to dry, maintain suitable airflow, clean tools and avoid "
+            "moving from affected plants to healthy ones without hygiene. Remove infected debris "
+            "only in ways appropriate for the crop and disease; some infected material should not "
+            "be composted or transported. Crop rotation is useful only when the pathogen host range "
+            "and production system make it effective. These practices reduce risk but do not prove "
+            "which disease is present."
+        ),
+    },
+    {
+        "id": "PV-INDIA-MAHARASHTRA-SURVEILLANCE-01",
+        "title": "India and Maharashtra crop pest surveillance resources",
+        "source": "ICAR-National Research Institute for Integrated Pest Management",
+        "source_title": "Technical Bulletins",
+        "source_url": "https://nriipm.res.in/technical-bulletins.aspx",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), NRIIPM",
+        "text": (
+            "ICAR-NRIIPM publishes resources describing horticultural pest surveillance and "
+            "advisory systems, including the Crop Pest Surveillance and Advisory Project (CROPSAP) "
+            "of Maharashtra, and manuals for surveillance of major horticultural crops. For a farm "
+            "in Maharashtra, check the current state or district agricultural advisory and the "
+            "official service's latest bulletin for crop, pest, location and date. This passage "
+            "only identifies a source to consult; it does not contain live surveillance data, a "
+            "current outbreak alert or a recommendation that a particular pest is present."
+        ),
+    },
+    {
+        "id": "PV-NUTRIENT-DIFFERENTIAL-01",
+        "title": "Nutrient deficiency symptoms require confirmation",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Nutrient Deficiencies",
+        "source_url": "https://ipm.ucanr.edu/home-and-landscape/nutrient-deficiencies/",
+        "source_publisher": "University of California Statewide Integrated Pest Management Program",
+        "text": (
+            "Nutrient problems can cause discoloration, smaller leaves, distorted growth, fewer "
+            "flowers or fruit, stunting and dieback. Some patterns can guide investigation: older "
+            "leaves may become uniformly pale with nitrogen shortage, while iron-related chlorosis "
+            "often affects newer leaves with greener veins. However, symptoms vary by species and "
+            "can be caused by root damage, soil pH, salinity, excess water, drought or disease. "
+            "Use soil and, where appropriate, plant-tissue testing and crop-specific recommendations "
+            "before correcting a suspected deficiency. Avoid adding fertilizer solely because an "
+            "image model reports yellow leaves."
+        ),
+    },
+    {
+        "id": "PV-TREATMENT-SAFETY-01",
+        "title": "Safe and responsible crop protection decisions",
+        "source": "ICAR-National Research Institute for Integrated Pest Management",
+        "source_title": "Technical Bulletins",
+        "source_url": "https://nriipm.res.in/technical-bulletins.aspx",
+        "source_publisher": "Indian Council of Agricultural Research (ICAR), NRIIPM",
+        "text": (
+            "A plant image classifier cannot determine the correct pesticide, formulation, dose, "
+            "mixing rate, pre-harvest interval or legal approval for a particular field. Confirm "
+            "the pest or disease, crop and growth stage, then consult current local agricultural "
+            "extension guidance and the product label approved for that crop and use. Follow label "
+            "directions, personal protective equipment, re-entry and harvest restrictions, and "
+            "environmental precautions. Consider nonchemical and cultural IPM options where suitable "
+            "and protect pollinators and beneficial organisms. This knowledge base intentionally "
+            "does not provide pesticide dosage instructions; never infer a dose from a model result."
+        ),
+    },
+    {
+        "id": "PV-FIELD-OBSERVATION-01",
+        "title": "Field observation checklist before interpreting a plant image",
+        "source": "UC Statewide IPM Program",
+        "source_title": "Diagnosing Plant Problems",
+        "source_url": "https://ipm.ucanr.edu/agriculture/floriculture-and-ornamental-nurseries/diagnosing-plant-problems/",
+        "source_publisher": "University of California Statewide Integrated Pest Management Program",
+        "text": (
+            "Improve a plant-health assessment by recording the crop and variety if known, plant "
+            "age or growth stage, affected plant part, whether symptoms begin on old or new leaves, "
+            "the number and distribution of affected plants, recent rainfall and temperature, "
+            "irrigation and drainage, fertilizer and spray history, nearby weeds or alternate hosts, "
+            "and visible insects, webbing, spores or lesions. Photograph the whole plant and the "
+            "symptom close-up in good light, including healthy comparison leaves when possible. "
+            "A single leaf photo may omit important context and look similar across diseases and "
+            "abiotic disorders. Use these observations to guide follow-up questions, not to claim "
+            "laboratory confirmation."
+        ),
+    },
+
 ]
 
 _STOPWORDS = {
