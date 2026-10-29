@@ -18,6 +18,7 @@ from rag_knowledge import retrieve_knowledge
 from rag_evaluation import validate_report
 from rag_claim_audit import test_gemini_connection, audit_report_claims
 from prediction_safety import assess_prediction, KNOWN_CLASS, LOW_CONFIDENCE, AMBIGUOUS_REVIEW
+from image_quality import assess_image_quality
 
 
 # =========================================================
@@ -545,7 +546,26 @@ def validate_image(image):
     if image.width > 6000 or image.height > 6000:
         return False, "Please upload an image smaller than 6000 × 6000 pixels."
 
-    return True, "Image validated successfully."
+    return True, "Image dimensions validated successfully."
+
+
+def show_image_quality(image):
+    """Show advisory photo-quality feedback without rejecting heuristic edge cases."""
+    quality = assess_image_quality(image)
+    st.markdown("#### 📷 Photo quality check")
+    q1, q2, q3 = st.columns(3)
+    q1.metric("Brightness", f"{quality['brightness']:.0f}/255")
+    q2.metric("Contrast", f"{quality['contrast']:.1f}")
+    q3.metric("Sharpness", f"{quality['sharpness']:.1f}")
+    if quality["warnings"]:
+        st.warning("Photo quality may affect reliability. " + " ".join(quality["warnings"]))
+    else:
+        st.success("No obvious brightness, contrast, or blur issue was detected.")
+    st.caption(
+        "This is a lightweight image-quality heuristic, not a leaf detector. "
+        "It cannot confirm that the image contains a plant leaf."
+    )
+    return quality
 
 
 def preprocess_image(image):
@@ -1127,6 +1147,14 @@ def generate_gradcam_details(image, class_index):
         "heatmap_min": float(np.min(normalized)),
         "heatmap_max": float(np.max(normalized)),
         "heatmap_std": float(np.std(normalized)),
+        "heatmap_coverage": float(np.mean(normalized >= 0.5)),
+        "heatmap_quality": (
+            "Low variation — explanation may be weak"
+            if float(np.std(normalized)) < 0.08
+            else "Broad activation — inspect focus carefully"
+            if float(np.mean(normalized >= 0.5)) > 0.70
+            else "Activation has visible spatial variation"
+        ),
     }
 
 
@@ -1221,6 +1249,7 @@ def disease_recognition():
         return
 
     st.success(message)
+    show_image_quality(image)
 
     image_column, info_column = st.columns([1.3, 1])
 
@@ -1434,6 +1463,19 @@ def disease_recognition():
             "They should not be interpreted as a medical-grade or lesion-segmentation mask."
         )
 
+        if explanation["heatmap_std"] < 0.08:
+            st.warning(
+                "Grad-CAM quality warning: the heatmap has low spatial variation, "
+                "so this explanation may be weak or uninformative."
+            )
+        elif explanation["heatmap_coverage"] > 0.70:
+            st.warning(
+                "Grad-CAM covers most of the image. Inspect the overlay carefully; "
+                "broad activation is not proof of a lesion-specific focus."
+            )
+        else:
+            st.success("Grad-CAM shows spatial variation (heuristic check only).")
+
         with st.expander("Advanced Grad-CAM diagnostics"):
             diagnostic_left, diagnostic_right = st.columns(2)
             with diagnostic_left:
@@ -1444,6 +1486,8 @@ def disease_recognition():
                 st.write("**Heatmap minimum**", round(explanation["heatmap_min"], 5))
                 st.write("**Heatmap maximum**", round(explanation["heatmap_max"], 5))
                 st.write("**Heatmap standard deviation**", round(explanation["heatmap_std"], 5))
+                st.write("**Pixels at/above 0.5 activation**", f"{explanation['heatmap_coverage'] * 100:.1f}%")
+                st.write("**Heuristic quality flag**", explanation["heatmap_quality"])
             st.info(
                 "A non-empty heatmap confirms the visualization was generated, "
                 "but does not alone prove that highlighted regions are faithful to the disease."
@@ -1597,6 +1641,7 @@ def real_world_testing():
         st.error(message)
         return
 
+    show_image_quality(image)
     image_col, result_col = st.columns([1.2, 1])
 
     with image_col:
@@ -1719,7 +1764,15 @@ def real_world_testing():
                 "heatmap_min": round(explanation["heatmap_min"], 5),
                 "heatmap_max": round(explanation["heatmap_max"], 5),
                 "heatmap_standard_deviation": round(explanation["heatmap_std"], 5),
+                "pixels_at_or_above_0_5_activation_percent": round(explanation["heatmap_coverage"] * 100, 2),
+                "heuristic_quality_flag": explanation["heatmap_quality"],
             })
+        if explanation["heatmap_std"] < 0.08:
+            st.warning("Grad-CAM heatmap has low variation; treat this explanation as weak.")
+        elif explanation["heatmap_coverage"] > 0.70:
+            st.warning("Grad-CAM activation is broad across the image; inspect it cautiously.")
+        else:
+            st.success("Grad-CAM shows spatial variation (heuristic check only).")
 
     except Exception as error:
         st.warning(f"Grad-CAM could not be generated: {error}")
@@ -1759,32 +1812,59 @@ def analytics():
         except Exception as error:
             st.warning(f"Real-world test history could not be read: {error}")
 
-    metric_columns = st.columns(3)
+    # Normalize CSV booleans safely; pandas may read older values as strings.
+    if not real_world.empty and "correct" in real_world.columns:
+        real_world["correct_normalized"] = (
+            real_world["correct"].astype(str).str.strip().str.lower()
+            .map({"true": True, "1": True, "yes": True, "false": False, "0": False, "no": False})
+        )
+
+    metric_columns = st.columns(4)
 
     with metric_columns[0]:
         st.metric("Predictions", len(history))
 
     with metric_columns[1]:
-        st.metric("Real-World Tests", len(real_world))
+        st.metric("Human-Verified Tests", len(real_world))
 
     with metric_columns[2]:
-        if len(real_world) > 0 and "correct" in real_world.columns:
-            accuracy = pd.to_numeric(
-                real_world["correct"],
-                errors="coerce"
-            ).mean() * 100
-            st.metric("Verified Accuracy", f"{accuracy:.2f}%")
+        verified = real_world["correct_normalized"].dropna() if "correct_normalized" in real_world.columns else pd.Series(dtype=float)
+        if not verified.empty:
+            st.metric("Verified Accuracy", f"{verified.astype(bool).mean() * 100:.2f}%")
         else:
             st.metric("Verified Accuracy", "N/A")
 
+    with metric_columns[3]:
+        if not history.empty and "status" in history.columns:
+            review_count = history["status"].astype(str).isin([LOW_CONFIDENCE, AMBIGUOUS_REVIEW]).sum()
+            st.metric("Flagged for Review", int(review_count))
+        else:
+            st.metric("Flagged for Review", 0)
+
     if not history.empty:
-        render_html("<div class=\"section-title\">Prediction History</div>")
+        render_html("<div class=\\"section-title\\">Prediction History</div>")
         st.dataframe(history, use_container_width=True)
+        if "status" in history.columns:
+            st.markdown("#### Prediction status distribution")
+            st.bar_chart(history["status"].fillna("Unknown").value_counts())
 
     if not real_world.empty:
-        render_html("<div class=\"section-title\">Real-World Results</div>")
+        render_html("<div class=\\"section-title\\">Human-Verified Performance</div>")
+        st.caption("Only results explicitly recorded as human-verified are included. Accuracy is meaningful only when labels are correct and the sample is representative.")
         st.dataframe(real_world, use_container_width=True)
+        if {"actual_class", "correct_normalized"}.issubset(real_world.columns):
+            class_view = real_world.dropna(subset=["actual_class", "correct_normalized"]).copy()
+            if not class_view.empty:
+                class_view["correct_numeric"] = class_view["correct_normalized"].astype(bool).astype(int)
+                by_class = class_view.groupby("actual_class", dropna=False)["correct_numeric"].agg(["count", "mean"]).reset_index()
+                by_class["verified_accuracy_percent"] = (by_class["mean"] * 100).round(2)
+                by_class = by_class.rename(columns={"count": "verified_samples"})
+                st.markdown("#### Verified accuracy by actual class")
+                st.dataframe(by_class[["actual_class", "verified_samples", "verified_accuracy_percent"]], use_container_width=True)
+                st.bar_chart(by_class.set_index("actual_class")["verified_accuracy_percent"])
 
+    st.markdown("#### Monitoring notes")
+    st.caption("Small or biased samples can make accuracy misleading. Collect verified images across different lighting, devices, growth stages, and backgrounds. These metrics do not measure unverified predictions.")
 
 # =========================================================
 # PREDICTION HISTORY
