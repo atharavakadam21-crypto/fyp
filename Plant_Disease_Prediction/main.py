@@ -57,7 +57,6 @@ REAL_WORLD_FILE = os.path.join(
     "real_world_tests.csv"
 )
 
-MODEL_VERSION = "v1.0"
 
 DEFAULT_THRESHOLD = 0.60
 
