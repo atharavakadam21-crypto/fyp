@@ -40,10 +40,15 @@ st.set_page_config(
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-_configured_model_path = os.getenv(
-    "PLANTVISION_MODEL_PATH",
-    os.path.join(APP_DIR, "trained_plant_disease_model.keras"),
+# Prefer the legacy HDF5 export when it exists. It avoids a known class of
+# weight-variable mapping failures seen with some older .keras archives.
+# PLANTVISION_MODEL_PATH can still explicitly override this selection.
+_default_h5_model = os.path.join(APP_DIR, "trained_plant_disease_model.h5")
+_default_keras_model = os.path.join(APP_DIR, "trained_plant_disease_model.keras")
+_default_model_path = (
+    _default_h5_model if os.path.isfile(_default_h5_model) else _default_keras_model
 )
+_configured_model_path = os.getenv("PLANTVISION_MODEL_PATH", _default_model_path)
 MODEL_PATH = (
     _configured_model_path
     if os.path.isabs(_configured_model_path)
